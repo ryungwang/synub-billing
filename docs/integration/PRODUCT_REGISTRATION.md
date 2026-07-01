@@ -210,8 +210,27 @@ private static final Map<String, UsageDto> USAGE = Map.of(
 
 - **`service_code`가 두 경로를 잇는 키다.** 제품은 자신의 `service_code`(카탈로그 등록값, §1.2)로
   조회하고, 웹훅 페이로드에도 `serviceCode`가 담겨 온다.
-- **사용자 식별 = `customerExternalId`.** 통합계정(SSO) 유저 ID. 제품과 빌링이 같은 유저를 이 값으로 맞춘다.
-  (현재 MVP는 SSO 전이라 데모 계정 `demo-user` 고정 — 실제 SSO 붙으면 이 값이 실유저 ID가 된다.)
+- **사용자 식별 = `customerExternalId`.** 통합계정(SSO) 유저 ID(토큰 `sub`). 제품과 빌링이 같은 유저를 이 값으로 맞춘다.
+- **조직 식별 = `orgCode`.** 회사 소유 구독은 `orgCode`(예: `SH-ABCDEFGHIJ`)로 그룹핑한다(entitlements·웹훅에 포함).
+
+### 🔐 신원·계정 규약 (제품이 반드시 지킬 것)
+
+로그인은 **SSO(통합계정) 중앙집중**이다. 제품은 **자체 로그인/비밀번호를 만들지 않는다.**
+
+- ❌ 제품 DB에 **login id / password 저장 금지.** 크레덴셜은 오직 `synub_sso.account`에만 있다.
+- ✅ 제품은 SSO가 발급한 **JWT 토큰만 검증**해 로그인 확인(공유 DB 없음).
+- ✅ 제품의 user/member 테이블은 **크레덴셜 없이** 두고, `external_id`(SSO sub)로 연결한 **로컬 프로필**만 보관:
+
+  ```sql
+  -- 예: office.member (그룹웨어)
+  external_id   -- SSO 계정 sub(로그인 주체). 비밀번호 없음
+  org_code      -- 소속 조직 테넌트(빌링에서 받은 SH-XXXXXXXXXX)
+  role          -- 제품 내 역할(대표/관리자/팀원 등) ← 제품 고유
+  department, display_name(표시 캐시), status
+  UNIQUE(org_code, external_id)
+  ```
+- **직원 추가 흐름**: 제품에서 직원 추가 → (SSO 계정 프로비저닝 API로) SSO에 계정 생성 → 제품 member 레코드 생성(external_id + org_code + 제품 role) → 직원은 SSO로 로그인.
+- 표시용 이메일·이름은 캐시할 수 있으나 **원천은 SSO**다.
 
 ---
 
@@ -240,7 +259,8 @@ Header: X-Service-Key: {서비스 키}     ← 필수(서버-투-서버 인증)
   "active":   true,                       // 지금 이용 권한이 있나 (구독 status가 'active'일 때만 true)
   "plan":     "pro",                      // 현재 플랜 코드 (없으면 null)
   "expiresAt":"2026-07-12",               // 다음 청구일(=현재 이용기간 만료 경계, 없으면 null)
-  "features": ["무제한 문서 분석","API 액세스"]  // 플랜 features (권한 세분화에 활용)
+  "features": ["무제한 문서 분석","API 액세스"], // 플랜 features (권한 세분화에 활용)
+  "orgCode":  "SH-ABCDEFGHIJ"             // 조직 소유 구독이면 조직코드(개인 구독이면 null) — 이 값으로 테넌트 그룹핑
 }
 ```
 
@@ -299,7 +319,9 @@ X-Synub-Signature: sha256={payload를 HMAC-SHA256으로 서명한 hex}
     "plan": "pro",
     "status": "active",
     "amount": 19900,
-    "nextBillingDate": "2026-08-01"
+    "nextBillingDate": "2026-08-01",
+    "ownerType": "organization",           // customer(개인) | organization(회사)
+    "orgCode": "SH-ABCDEFGHIJ"             // 회사 소유 구독이면 조직코드(개인이면 없음) — 테넌트 그룹핑 키
   }
 }
 ```
