@@ -42,6 +42,14 @@ public class BusinessVerifier {
         return raw == null ? "" : raw.replaceAll("[^0-9]", "");
     }
 
+    private String firstText(JsonNode node, String... fields) {
+        for (String f : fields) {
+            String v = node.path(f).asText("");
+            if (!v.isBlank()) return v;
+        }
+        return "";
+    }
+
     /** 형식·체크섬 검증(국세청 알고리즘). */
     public boolean isValidFormat(String bizNo) {
         String d = normalize(bizNo);
@@ -114,8 +122,10 @@ public class BusinessVerifier {
             }
             JsonNode data = json.readTree(res.body()).path("data");
             if (data.isArray() && !data.isEmpty()) {
-                String stat = data.get(0).path("b_stat").asText("");
-                String code = data.get(0).path("b_stat_cd").asText("");
+                JsonNode row = data.get(0);
+                // 국세청 실제 필드명은 b_stt / b_stt_cd (b_stat 아님). 안전하게 둘 다 확인.
+                String stat = firstText(row, "b_stt", "b_stat");
+                String code = firstText(row, "b_stt_cd", "b_stat_cd");
                 return "계속사업자".equals(stat) || "01".equals(code);
             }
             return false;
