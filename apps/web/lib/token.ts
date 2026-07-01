@@ -2,6 +2,8 @@
 // (브라우저 API는 typeof window 가드로 서버에선 no-op/ null 반환)
 
 export const TOKEN_KEY = "synub_token";
+export const REFRESH_KEY = "synub_refresh";
+const SSO_BASE = process.env.NEXT_PUBLIC_SSO_BASE_URL ?? "http://localhost:8090";
 
 export interface AuthUser {
   sub: string;
@@ -45,15 +47,15 @@ export function rawToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-/** 유효한(미만료) 토큰만 반환. 만료 시 자동 제거. */
+/**
+ * 유효한(미만료) 액세스 토큰만 반환. 만료/무효면 null.
+ * 여기서 저장소를 지우지 않는다 — 리프레시 토큰으로 갱신할 기회를 남겨야 하므로.
+ */
 export function getToken(): string | null {
   const t = rawToken();
   if (!t) return null;
   const u = decode(t);
-  if (!u || u.exp * 1000 <= Date.now()) {
-    clearToken();
-    return null;
-  }
+  if (!u || u.exp * 1000 <= Date.now()) return null;
   return t;
 }
 
@@ -62,12 +64,58 @@ export function getUser(): AuthUser | null {
   return t ? decode(t) : null;
 }
 
-export function setToken(token: string) {
-  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
+export function getRefreshToken(): string | null {
+  return typeof window !== "undefined" ? localStorage.getItem(REFRESH_KEY) : null;
+}
+
+/** 로그인/갱신 응답의 access(+refresh) 저장. */
+export function setTokens(accessToken: string, refreshToken?: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEY, accessToken);
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
   emit();
 }
 
 export function clearToken() {
-  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  }
   emit();
+}
+
+let refreshing: Promise<string | null> | null = null;
+
+/**
+ * 리프레시 토큰으로 액세스 토큰 갱신. 동시 호출은 하나로 합친다(중복 회전 방지).
+ * 성공 시 새 토큰 저장 후 access 반환, 실패 시 토큰 정리 후 null.
+ */
+export function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  const rt = getRefreshToken();
+  if (!rt) return Promise.resolve(null);
+  if (refreshing) return refreshing;
+
+  refreshing = fetch(`${SSO_BASE}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: rt }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        clearToken();
+        return null;
+      }
+      const data = await res.json();
+      setTokens(data.accessToken, data.refreshToken);
+      return data.accessToken as string;
+    })
+    .catch(() => {
+      clearToken();
+      return null;
+    })
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
 }

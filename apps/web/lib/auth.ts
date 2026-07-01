@@ -7,8 +7,9 @@ import {
   type AuthUser,
   decode,
   rawToken,
-  setToken,
+  setTokens,
   clearToken,
+  getRefreshToken,
   subscribeToken,
 } from "./token";
 import { resetContext } from "./context";
@@ -28,7 +29,7 @@ export async function login(email: string, password: string): Promise<void> {
     throw new Error(b.message ?? "로그인에 실패했습니다.");
   }
   const data = await res.json();
-  setToken(data.accessToken);
+  setTokens(data.accessToken, data.refreshToken);
 }
 
 export async function register(
@@ -49,6 +50,16 @@ export async function register(
 }
 
 export function logout() {
+  // 서버에서 리프레시 토큰 폐기(실패해도 로컬 정리는 진행)
+  const rt = getRefreshToken();
+  if (rt) {
+    fetch(`${SSO_BASE}/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: rt }),
+      keepalive: true,
+    }).catch(() => {});
+  }
   resetContext(); // 로그아웃 시 개인 컨텍스트로 초기화
   clearToken();
 }

@@ -1,6 +1,6 @@
 // Synub Billing API 클라이언트 — 백엔드(apps/api) REST 계약과 1:1.
 
-import { getToken, clearToken } from "./token";
+import { getToken, clearToken, refreshAccessToken } from "./token";
 import { getContextHeader } from "./context";
 
 const BASE =
@@ -102,7 +102,11 @@ export interface ApiDashboard {
   spendHistory: ApiSpendPoint[];
 }
 
-async function http<T>(path: string, init?: RequestInit): Promise<T> {
+async function http<T>(
+  path: string,
+  init?: RequestInit,
+  retried = false
+): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
     ...init,
@@ -114,8 +118,13 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     },
     cache: "no-store",
   });
+  if (res.status === 401 && !retried) {
+    // 액세스 토큰 만료 추정 — 리프레시로 갱신 후 1회 재시도
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return http<T>(path, init, true);
+  }
   if (res.status === 401) {
-    // 토큰 만료/무효 — 정리하고 로그인 유도
+    // 갱신 실패 — 정리하고 로그인 유도
     clearToken();
   }
   if (!res.ok) {
