@@ -27,6 +27,10 @@ dependencies {
     // SSO 토큰(JWT) 실제 서명검증 — HS256(공유키) 및 RS256/JWKS(SSO 공개키) 지원.
     implementation("com.nimbusds:nimbus-jose-jwt:9.40")
 
+    // 분산 스케줄러 락 — 다중 인스턴스에서 자동청구 중복 실행 방지(DB 락).
+    implementation("net.javacrumbs.shedlock:shedlock-spring:5.16.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.16.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
