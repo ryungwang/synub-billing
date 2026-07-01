@@ -31,7 +31,8 @@ public class DtoMapper {
 
     public PlanDto toPlan(Plan p) {
         return new PlanDto(p.getId(), p.getPlanCode(), p.getName(), p.getTagline(),
-                p.getAmount(), p.getBillingCycle(), p.getFeatures(), p.isHighlight());
+                p.getAmount(), p.getBillingCycle(), p.getFeatures(), p.isHighlight(),
+                p.getPricingType());
     }
 
     public ProductDto toProduct(Product p, long subscribers) {
@@ -55,9 +56,9 @@ public class DtoMapper {
         UsageDto usage = USAGE.get(product.getServiceCode());
         return new SubscriptionDto(
                 s.getId(), product.getServiceCode(), product.getName(), plan.getName(),
-                plan.getAmount(), plan.getBillingCycle(), s.getStatus(),
+                s.chargeAmount(), plan.getBillingCycle(), s.getStatus(),
                 started, s.getNextBillingDate(), card, s.isCancelAtPeriodEnd(),
-                months, usage);
+                months, usage, plan.getPricingType(), plan.getAmount(), s.getSeats());
     }
 
     public PaymentDto toPayment(Payment pay) {

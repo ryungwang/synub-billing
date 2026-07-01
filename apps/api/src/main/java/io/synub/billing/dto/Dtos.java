@@ -13,7 +13,8 @@ public final class Dtos {
     // ---- 카탈로그 ----
     public record PlanDto(
             Long id, String code, String name, String tagline,
-            int amount, String cycle, List<String> features, boolean highlight) {}
+            int amount, String cycle, List<String> features, boolean highlight,
+            String pricingType) {}
 
     public record ProductDto(
             String serviceCode, String name, String category, String description,
@@ -32,7 +33,8 @@ public final class Dtos {
             int amount, String cycle, String status,
             LocalDate startedAt, LocalDate nextBillingDate,
             String card, boolean cancelAtPeriodEnd,
-            int monthsActive, UsageDto usage) {}
+            int monthsActive, UsageDto usage,
+            String pricingType, int unitAmount, int seats) {}
 
     // ---- 결제 내역 ----
     public record PaymentDto(
@@ -63,9 +65,11 @@ public final class Dtos {
             String cardLast4, String cardType, Boolean primary) {}
 
     public record CreateSubscriptionRequest(
-            @NotNull Long planId, @NotNull Long billingKeyId) {}
+            @NotNull Long planId, @NotNull Long billingKeyId, Integer seats) {}
 
     public record ChangePlanRequest(@NotNull Long planId) {}
+
+    public record ChangeSeatsRequest(@NotNull Integer seats) {}
 
     // ---- 조직/역할 ----
     /** 내가 속한 조직 + 내 역할. */

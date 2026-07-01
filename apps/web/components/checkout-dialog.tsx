@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProductIcon } from "@/components/product-icon";
 import { cn, formatKRW } from "@/lib/utils";
-import { api, type ApiCard } from "@/lib/api";
+import { api, type ApiCard, type PricingType } from "@/lib/api";
 import {
   Check,
   CreditCard,
@@ -22,14 +22,17 @@ import {
   ExternalLink,
   Loader2,
   AlertCircle,
+  Minus,
+  Users,
 } from "lucide-react";
 
 export interface CheckoutTarget {
   planId: number;
   product: string;
   plan: string;
-  amount: number;
+  amount: number; // 정액=총액, per_seat=1인당 단가
   cycle: "monthly" | "yearly";
+  pricingType: PricingType;
 }
 
 export function CheckoutDialog({
@@ -50,12 +53,14 @@ export function CheckoutDialog({
   const [done, setDone] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [seats, setSeats] = React.useState(1);
 
   React.useEffect(() => {
     if (!open) return;
     setDone(false);
     setAgreed(false);
     setError(null);
+    setSeats(1);
     api
       .cards()
       .then((cs) => {
@@ -83,7 +88,11 @@ export function CheckoutDialog({
     setSubmitting(true);
     setError(null);
     try {
-      await api.createSubscription(target.planId, cardId);
+      await api.createSubscription(
+        target.planId,
+        cardId,
+        target.pricingType === "per_seat" ? seats : undefined
+      );
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "결제에 실패했습니다.");
@@ -94,6 +103,8 @@ export function CheckoutDialog({
 
   if (!target) return null;
   const cycleLabel = target.cycle === "yearly" ? "년" : "월";
+  const perSeat = target.pricingType === "per_seat";
+  const total = perSeat ? target.amount * seats : target.amount;
 
   return (
     <Dialog open={open} onOpenChange={(v) => close(v ? true : done)}>
@@ -114,9 +125,12 @@ export function CheckoutDialog({
             <div className="mt-5 w-full rounded-2xl bg-muted/60 p-4 text-left">
               <Row label="제품" value={target.product} />
               <Row label="플랜" value={target.plan} />
+              {perSeat && (
+                <Row label="좌석" value={`${seats}인 × ${formatKRW(target.amount)}`} />
+              )}
               <Row
                 label="결제 금액"
-                value={`${formatKRW(target.amount)} / ${cycleLabel}`}
+                value={`${formatKRW(total)} / ${cycleLabel}`}
                 strong
               />
             </div>
@@ -150,10 +164,41 @@ export function CheckoutDialog({
                   {formatKRW(target.amount)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  / {cycleLabel}
+                  {perSeat ? `/ 인 · ${cycleLabel}` : `/ ${cycleLabel}`}
                 </div>
               </div>
             </div>
+
+            {perSeat && (
+              <div className="flex items-center justify-between rounded-2xl border border-border p-4">
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <Users className="size-4 text-primary" />
+                  좌석 수
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSeats((s) => Math.max(1, s - 1))}
+                    className="flex size-8 items-center justify-center rounded-lg border border-border hover:bg-muted disabled:opacity-40"
+                    disabled={seats <= 1}
+                    aria-label="좌석 줄이기"
+                  >
+                    <Minus className="size-4" />
+                  </button>
+                  <span className="w-8 text-center text-base font-extrabold tnum">
+                    {seats}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSeats((s) => Math.min(999, s + 1))}
+                    className="flex size-8 items-center justify-center rounded-lg border border-border hover:bg-muted"
+                    aria-label="좌석 늘리기"
+                  >
+                    <Plus className="size-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="mb-2 text-sm font-bold">결제수단</div>
@@ -247,7 +292,7 @@ export function CheckoutDialog({
               onClick={submit}
             >
               {submitting && <Loader2 className="animate-spin" />}
-              {formatKRW(target.amount)} 결제하고 시작하기
+              {formatKRW(total)} 결제하고 시작하기
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5 text-success" />

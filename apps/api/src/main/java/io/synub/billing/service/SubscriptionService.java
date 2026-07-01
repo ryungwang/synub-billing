@@ -65,12 +65,16 @@ public class SubscriptionService {
         BillingKey key = keys.findByIdAndOwnerTypeAndOwnerId(req.billingKeyId(), owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));
 
+        // 인원당 과금이면 좌석 수 반영, 정액이면 1좌석.
+        int seats = plan.isPerSeat() ? Math.max(1, req.seats() == null ? 1 : req.seats()) : 1;
+        int amount = plan.amountForSeats(seats);
+
         String paymentId = "synub-" + UUID.randomUUID();
         String orderName = plan.getProduct().getName() + " " + plan.getName() + " 구독";
         PaymentGateway.ChargeResult charge = gateway.charge(new PaymentGateway.ChargeRequest(
-                key.getPgBillingKey(), plan.getAmount(), orderName, paymentId,
+                key.getPgBillingKey(), amount, orderName, paymentId,
                 me.getExternalId(), me.getEmail(),
-                "010-0000-0000")); // TODO: 빌링키 발급 시 고객 전화번호 수집 (KG이니시스 필수)
+                "010-0000-0000")); // TODO: 빌링키 발급 시 고객 전화번호 수집
         if (!charge.success()) {
             throw new BadRequestException("첫 결제에 실패했습니다: " + charge.failureReason());
         }
@@ -82,12 +86,13 @@ public class SubscriptionService {
 
         Subscription sub = new Subscription(me, plan, key, "active", now, next);
         sub.setOwner(owner.type(), owner.id());
+        sub.setSeats(seats);
         sub.setCancelAtPeriodEnd(false);
         subscriptions.save(sub);
 
         String receiptNo = today.format(DateTimeFormatter.BASIC_ISO_DATE)
                 + "-" + String.format("%04d", sub.getId());
-        payments.save(new Payment(sub, charge.pgPaymentId(), plan.getAmount(),
+        payments.save(new Payment(sub, charge.pgPaymentId(), amount,
                 "paid", null, receiptNo, now));
 
         webhooks.fire(sub, SubscriptionWebhooks.ACTIVATED);
@@ -116,6 +121,17 @@ public class SubscriptionService {
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
         sub.setPlan(newPlan);
         webhooks.fire(sub, SubscriptionWebhooks.PLAN_CHANGED);
+        return mapper.toSubscription(sub);
+    }
+
+    /** 좌석 수 변경(인원당 과금). 다음 청구부터 반영. 소유 스코프 쓰기 권한 필요. */
+    @Transactional
+    public SubscriptionDto changeSeats(Long id, int seats) {
+        Subscription sub = findOwned(id);
+        if (!sub.getPlan().isPerSeat()) {
+            throw new BadRequestException("인원당 과금 구독이 아닙니다.");
+        }
+        sub.setSeats(Math.max(1, seats));
         return mapper.toSubscription(sub);
     }
 

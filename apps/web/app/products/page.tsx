@@ -32,6 +32,7 @@ export default function ProductsPage() {
       plan: plan.name,
       amount: plan.amount,
       cycle: plan.cycle,
+      pricingType: plan.pricingType,
     });
     setOpen(true);
   }
@@ -118,11 +119,15 @@ export default function ProductsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {product.plans.map((plan) => {
+                const perSeat = plan.pricingType === "per_seat";
                 const isMonthlyPlan = plan.cycle === "monthly";
-                const showYearly = yearly && isMonthlyPlan;
+                const showYearly = yearly && isMonthlyPlan && !perSeat;
                 const displayAmount = showYearly ? plan.amount * 10 : plan.amount;
-                const cycleLabel =
-                  showYearly || plan.cycle === "yearly" ? "년" : "월";
+                const cycleLabel = perSeat
+                  ? "인 · 월"
+                  : showYearly || plan.cycle === "yearly"
+                  ? "년"
+                  : "월";
 
                 return (
                   <Card

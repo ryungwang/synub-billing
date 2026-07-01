@@ -74,16 +74,17 @@ public class BillingEngine {
         String paymentId = "synub-sub" + sub.getId() + "-" + today
                 + "-r" + sub.getRetryCount() + "-" + UUID.randomUUID().toString().substring(0, 8);
         String orderName = plan.getProduct().getName() + " " + plan.getName() + " 정기결제";
+        int amount = sub.chargeAmount(); // 좌석 수 반영(인원당 과금)
 
         PaymentGateway.ChargeResult result = gateway.charge(new PaymentGateway.ChargeRequest(
-                sub.getBillingKey().getPgBillingKey(), plan.getAmount(), orderName, paymentId,
+                sub.getBillingKey().getPgBillingKey(), amount, orderName, paymentId,
                 sub.getCustomer().getExternalId(), sub.getCustomer().getEmail(),
-                "010-0000-0000")); // TODO: 고객 전화번호 수집 후 전달 (KG이니시스 필수)
+                "010-0000-0000")); // TODO: 고객 전화번호 수집 후 전달
 
         if (result.success()) {
             String receiptNo = today.format(DateTimeFormatter.BASIC_ISO_DATE)
                     + "-" + String.format("%06d", sub.getId());
-            payments.save(new Payment(sub, result.pgPaymentId(), plan.getAmount(),
+            payments.save(new Payment(sub, result.pgPaymentId(), amount,
                     "paid", null, receiptNo, Instant.now()));
 
             LocalDate base = wasPastDue ? today : sub.getNextBillingDate();
@@ -100,7 +101,7 @@ public class BillingEngine {
         }
 
         // 실패 처리
-        payments.save(new Payment(sub, null, plan.getAmount(),
+        payments.save(new Payment(sub, null, amount,
                 "failed", result.failureReason(), null, null));
         int attempt = sub.getRetryCount() + 1;
         sub.setRetryCount(attempt);

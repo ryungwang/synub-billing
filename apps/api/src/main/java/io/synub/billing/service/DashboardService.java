@@ -52,10 +52,10 @@ public class DashboardService {
         int activeCount = (int) subs.stream().filter(s -> "active".equals(s.getStatus())).count();
         long monthlyTotal = subs.stream()
                 .filter(s -> "active".equals(s.getStatus()) && "monthly".equals(s.getPlan().getBillingCycle()))
-                .mapToLong(s -> s.getPlan().getAmount()).sum();
+                .mapToLong(Subscription::chargeAmount).sum();
         long savedByYearly = subs.stream()
                 .filter(s -> "active".equals(s.getStatus()) && "yearly".equals(s.getPlan().getBillingCycle()))
-                .mapToLong(s -> Math.round(s.getPlan().getAmount() / 10.0) * 2).sum();
+                .mapToLong(s -> Math.round(s.chargeAmount() / 10.0) * 2).sum();
         long paidThisYear = pays.stream()
                 .filter(p -> "paid".equals(p.getStatus()))
                 .mapToLong(Payment::getAmount).sum();

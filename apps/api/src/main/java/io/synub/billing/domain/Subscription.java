@@ -41,6 +41,10 @@ public class Subscription {
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
+    /** 좌석 수(인원당 과금 plan에서만 의미). 정액 plan은 1로 취급. */
+    @Column(nullable = false)
+    private int seats = 1;
+
     /** 소유 스코프: 'customer' | 'organization'. 기본은 생성 고객 개인 소유. */
     @Column(name = "owner_type", nullable = false)
     private String ownerType;
@@ -89,6 +93,10 @@ public class Subscription {
     public void setCancelAtPeriodEnd(boolean v) { this.cancelAtPeriodEnd = v; }
     public int getRetryCount() { return retryCount; }
     public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
+    public int getSeats() { return seats; }
+    public void setSeats(int seats) { this.seats = Math.max(1, seats); }
+    /** 좌석 수 반영 실제 청구액. */
+    public int chargeAmount() { return plan.amountForSeats(seats); }
     public String getOwnerType() { return ownerType; }
     public Long getOwnerId() { return ownerId; }
     public Instant getCreatedAt() { return createdAt; }

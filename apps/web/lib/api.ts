@@ -10,6 +10,8 @@ export type Cycle = "monthly" | "yearly";
 export type SubStatus = "active" | "past_due" | "suspended" | "canceled";
 export type PayStatus = "paid" | "failed" | "refunded" | "pending";
 
+export type PricingType = "flat" | "per_seat";
+
 export interface ApiPlan {
   id: number;
   code: string;
@@ -19,6 +21,7 @@ export interface ApiPlan {
   cycle: Cycle;
   features: string[];
   highlight: boolean;
+  pricingType: PricingType;
 }
 
 export interface ApiProduct {
@@ -61,6 +64,9 @@ export interface ApiSubscription {
   cancelAtPeriodEnd: boolean;
   monthsActive: number;
   usage: ApiUsage | null;
+  pricingType: PricingType;
+  unitAmount: number;
+  seats: number;
 }
 
 export interface ApiPayment {
@@ -191,13 +197,18 @@ export const api = {
   payments: () => http<ApiPayment[]>("/payments"),
   cards: () => http<ApiCard[]>("/billing/keys"),
 
-  createSubscription: (planId: number, billingKeyId: number) =>
+  createSubscription: (planId: number, billingKeyId: number, seats?: number) =>
     http<ApiSubscription>("/subscriptions", {
       method: "POST",
-      body: JSON.stringify({ planId, billingKeyId }),
+      body: JSON.stringify({ planId, billingKeyId, seats }),
     }),
   cancelSubscription: (id: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/cancel`, { method: "POST" }),
+  changeSeats: (id: number, seats: number) =>
+    http<ApiSubscription>(`/subscriptions/${id}/seats`, {
+      method: "POST",
+      body: JSON.stringify({ seats }),
+    }),
   changePlan: (id: number, planId: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/change-plan`, {
       method: "POST",

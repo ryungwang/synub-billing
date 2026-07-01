@@ -39,4 +39,10 @@ public class SubscriptionController {
                                       @Valid @RequestBody ChangePlanRequest req) {
         return service.changePlan(id, req);
     }
+
+    @PostMapping("/{id}/seats")
+    public SubscriptionDto changeSeats(@PathVariable Long id,
+                                       @Valid @RequestBody ChangeSeatsRequest req) {
+        return service.changeSeats(id, req.seats());
+    }
 }

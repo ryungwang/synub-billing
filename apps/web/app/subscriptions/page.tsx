@@ -120,7 +120,9 @@ export default function SubscriptionsPage() {
                       {formatKRW(s.amount)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      / {s.cycle === "yearly" ? "년" : "월"}
+                      {s.pricingType === "per_seat"
+                        ? `${s.seats}인 × ${formatKRW(s.unitAmount)} / 월`
+                        : `/ ${s.cycle === "yearly" ? "년" : "월"}`}
                     </div>
                   </div>
                 </div>

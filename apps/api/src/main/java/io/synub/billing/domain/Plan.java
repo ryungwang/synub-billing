@@ -31,6 +31,10 @@ public class Plan {
     @Column(name = "billing_cycle", nullable = false)
     private String billingCycle;
 
+    /** 과금 방식: flat(정액) | per_seat(인원당, amount=1인당 단가). */
+    @Column(name = "pricing_type", nullable = false)
+    private String pricingType;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private List<String> features = new ArrayList<>();
@@ -56,6 +60,14 @@ public class Plan {
     public int getAmount() { return amount; }
     public String getCurrency() { return currency; }
     public String getBillingCycle() { return billingCycle; }
+    public String getPricingType() { return pricingType; }
+
+    public boolean isPerSeat() { return "per_seat".equals(pricingType); }
+
+    /** 좌석 수를 반영한 실제 청구액. 정액이면 seats 무시. */
+    public int amountForSeats(int seats) {
+        return isPerSeat() ? amount * Math.max(1, seats) : amount;
+    }
     public List<String> getFeatures() { return features; }
     public boolean isHighlight() { return highlight; }
     public String getStatus() { return status; }
