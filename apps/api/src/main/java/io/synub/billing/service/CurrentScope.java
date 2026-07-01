@@ -42,6 +42,10 @@ public class CurrentScope {
         if (!m.canManageBilling()) {
             throw new ForbiddenException("이 작업은 조직의 소유자·결제 관리자만 할 수 있습니다.");
         }
+        // 사업자 인증 미완료(pending/rejected) 회사는 결제·구독 등 쓰기 차단(도용 방지)
+        if (!organizations.org(ctx.orgId()).isVerified()) {
+            throw new ForbiddenException("회사 인증이 완료되어야 결제·구독을 이용할 수 있습니다.");
+        }
         return Owner.organization(ctx.orgId());
     }
 }

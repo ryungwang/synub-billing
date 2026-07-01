@@ -72,8 +72,8 @@ public final class Dtos {
     public record ChangeSeatsRequest(@NotNull Integer seats) {}
 
     // ---- 조직/역할 ----
-    /** 내가 속한 조직 + 내 역할. */
-    public record OrgDto(Long id, String name, String role) {}
+    /** 내가 속한 조직 + 내 역할 + 인증상태(pending|verified|rejected). */
+    public record OrgDto(Long id, String name, String role, String verifyStatus) {}
 
     public record CreateOrgRequest(@NotBlank String name) {}
 
@@ -98,4 +98,9 @@ public final class Dtos {
 
     public record AdminPaymentDto(Long id, String customerEmail, String product,
                                   int amount, String status, String date, String receiptNo) {}
+
+    public record AdminOrgDto(Long id, String name, String businessNo,
+                              String verifyStatus, String rejectReason) {}
+
+    public record RejectOrgRequest(String reason) {}
 }

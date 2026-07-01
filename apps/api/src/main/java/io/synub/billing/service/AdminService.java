@@ -1,7 +1,9 @@
 package io.synub.billing.service;
 
+import io.synub.billing.domain.Organization;
 import io.synub.billing.domain.Payment;
 import io.synub.billing.domain.Subscription;
+import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
 import io.synub.billing.dto.Dtos.AdminSubscriptionDto;
@@ -10,6 +12,7 @@ import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.repo.PaymentRepository;
 import io.synub.billing.repo.SubscriptionRepository;
+import io.synub.billing.storage.StorageService;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.ForbiddenException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
@@ -31,16 +34,18 @@ public class AdminService {
     private final CustomerRepository customers;
     private final OrganizationRepository organizations;
     private final PaymentGateway gateway;
+    private final StorageService storage;
     private final CurrentUser currentUser;
 
     public AdminService(SubscriptionRepository subscriptions, PaymentRepository payments,
                         CustomerRepository customers, OrganizationRepository organizations,
-                        PaymentGateway gateway, CurrentUser currentUser) {
+                        PaymentGateway gateway, StorageService storage, CurrentUser currentUser) {
         this.subscriptions = subscriptions;
         this.payments = payments;
         this.customers = customers;
         this.organizations = organizations;
         this.gateway = gateway;
+        this.storage = storage;
         this.currentUser = currentUser;
     }
 
@@ -94,6 +99,53 @@ public class AdminService {
         }
         p.setStatus("refunded");
         return toAdminPayment(p);
+    }
+
+    // ---- 회사 인증 심사 ----
+
+    @Transactional(readOnly = true)
+    public List<AdminOrgDto> organizations() {
+        requireAdmin();
+        return organizations.findAllByOrderByIdDesc().stream()
+                .map(o -> new AdminOrgDto(o.getId(), o.getName(), o.getBusinessNo(),
+                        o.getVerifyStatus(), o.getRejectReason()))
+                .toList();
+    }
+
+    @Transactional
+    public void approveOrganization(Long id) {
+        requireAdmin();
+        org(id).approve(Instant.now());
+    }
+
+    @Transactional
+    public void rejectOrganization(Long id, String reason) {
+        requireAdmin();
+        org(id).reject(reason != null && !reason.isBlank() ? reason.trim() : "인증 요건 미충족");
+    }
+
+    /** 사업자등록증 서류 열람(관리자 심사용). */
+    @Transactional(readOnly = true)
+    public DocumentContent organizationDocument(Long id) {
+        requireAdmin();
+        Organization o = org(id);
+        if (o.getBusinessDoc() == null) throw new NotFoundException("첨부 서류가 없습니다.");
+        return new DocumentContent(storage.load(o.getBusinessDoc()), contentType(o.getBusinessDoc()));
+    }
+
+    public record DocumentContent(byte[] content, String contentType) {}
+
+    private Organization org(Long id) {
+        return organizations.findById(id)
+                .orElseThrow(() -> new NotFoundException("회사를 찾을 수 없습니다."));
+    }
+
+    private String contentType(String key) {
+        String k = key.toLowerCase();
+        if (k.endsWith(".pdf")) return "application/pdf";
+        if (k.endsWith(".png")) return "image/png";
+        if (k.endsWith(".jpg") || k.endsWith(".jpeg")) return "image/jpeg";
+        return "application/octet-stream";
     }
 
     private AdminSubscriptionDto toAdminSub(Subscription s) {

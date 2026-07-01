@@ -16,6 +16,7 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { rawContext, subscribeContext, contextOrgId } from "@/lib/context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -28,22 +29,27 @@ type NavGroup = { title: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
-    title: "결제",
+    title: "서비스",
     items: [
       { href: "/", label: "대시보드", icon: LayoutDashboard },
       { href: "/products", label: "제품 둘러보기", icon: Sparkles },
     ],
   },
   {
-    title: "내 계정",
+    title: "구독·결제",
     items: [
       { href: "/subscriptions", label: "구독 관리", icon: Repeat },
       { href: "/payment-methods", label: "결제수단", icon: CreditCard },
       { href: "/payments", label: "결제 내역", icon: ReceiptText },
-      { href: "/team", label: "멤버", icon: Users },
     ],
   },
 ];
+
+// 회사(조직) 컨텍스트에서만 노출
+const ORG_GROUP: NavGroup = {
+  title: "조직",
+  items: [{ href: "/team", label: "멤버", icon: Users }],
+};
 
 function NavLink({
   item,
@@ -85,7 +91,13 @@ const ADMIN_GROUP: NavGroup = {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const groups = user?.admin ? [...NAV, ADMIN_GROUP] : NAV;
+  const ctx = React.useSyncExternalStore(subscribeContext, rawContext, () => "personal");
+  const isOrg = contextOrgId(ctx) !== null;
+
+  const groups = [...NAV];
+  if (isOrg) groups.push(ORG_GROUP); // 회사 컨텍스트에서만 멤버 관리 노출
+  if (user?.admin) groups.push(ADMIN_GROUP);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 

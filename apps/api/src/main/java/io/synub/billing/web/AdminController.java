@@ -1,9 +1,14 @@
 package io.synub.billing.web;
 
+import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
 import io.synub.billing.dto.Dtos.AdminSubscriptionDto;
+import io.synub.billing.dto.Dtos.RejectOrgRequest;
 import io.synub.billing.service.AdminService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,4 +43,33 @@ public class AdminController {
     public AdminPaymentDto refund(@PathVariable Long id) {
         return admin.refund(id);
     }
+
+    // ---- 회사 인증 심사 ----
+
+    @GetMapping("/organizations")
+    public List<AdminOrgDto> organizations() {
+        return admin.organizations();
+    }
+
+    @PostMapping("/organizations/{id}/approve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void approveOrg(@PathVariable Long id) {
+        admin.approveOrganization(id);
+    }
+
+    @PostMapping("/organizations/{id}/reject")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rejectOrg(@PathVariable Long id, @RequestBody(required = false) RejectOrgRequest req) {
+        admin.rejectOrganization(id, req != null ? req.reason() : null);
+    }
+
+    @GetMapping("/organizations/{id}/document")
+    public ResponseEntity<byte[]> orgDocument(@PathVariable Long id) {
+        AdminService.DocumentContent doc = admin.organizationDocument(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(doc.contentType()))
+                .header("Content-Disposition", "inline; filename=\"business-doc\"")
+                .body(doc.content());
+    }
 }
+

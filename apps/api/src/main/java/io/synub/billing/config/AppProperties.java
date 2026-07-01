@@ -6,9 +6,19 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(Tenant tenant, Cors cors, Billing billing,
-                            Webhook webhook, Portone portone, Sso sso, Mail mail) {
+                            Webhook webhook, Portone portone, Sso sso, Mail mail,
+                            Business business, Storage storage) {
 
     public record Tenant(long defaultCompanyId) {}
+
+    /**
+     * 사업자등록번호 검증. apiKey 있으면 국세청 상태조회 API로 실존·영업상태 확인,
+     * 없으면 형식·체크섬만 검증(로컬). statusApiUrl = 국세청(공공데이터포털) endpoint.
+     */
+    public record Business(String statusApiUrl, String apiKey) {}
+
+    /** 파일 저장. dir = 로컬 파일시스템 저장 경로(운영은 S3 어댑터로 교체). */
+    public record Storage(String dir) {}
 
     /**
      * 발신 이메일. from=발신 주소, appBaseUrl=이메일 내 링크 대상(앱 URL).

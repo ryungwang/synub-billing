@@ -8,6 +8,7 @@ import io.synub.billing.dto.Dtos.OrgDto;
 import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
+import io.synub.billing.storage.StorageService;
 import io.synub.billing.tenant.CurrentTenant;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.ForbiddenException;
@@ -18,42 +19,75 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/** 조직 생성·조회 + 멤버십·역할 관리. 조직/역할은 빌링이 주관(결제 권한과 직결). */
+/** 조직 생성·조회 + 멤버십·역할 + 사업자 인증. 조직/역할/인증은 빌링이 주관(결제 권한과 직결). */
 @Service
 public class OrganizationService {
 
     private final OrganizationRepository organizations;
     private final MembershipRepository memberships;
     private final CustomerRepository customers;
+    private final BusinessVerifier businessVerifier;
+    private final StorageService storage;
     private final CurrentUser currentUser;
     private final CurrentTenant tenant;
 
     public OrganizationService(OrganizationRepository organizations, MembershipRepository memberships,
-                               CustomerRepository customers, CurrentUser currentUser, CurrentTenant tenant) {
+                               CustomerRepository customers, BusinessVerifier businessVerifier,
+                               StorageService storage, CurrentUser currentUser, CurrentTenant tenant) {
         this.organizations = organizations;
         this.memberships = memberships;
         this.customers = customers;
+        this.businessVerifier = businessVerifier;
+        this.storage = storage;
         this.currentUser = currentUser;
         this.tenant = tenant;
     }
 
-    /** 조직 생성. 생성자는 owner 로 등록된다. */
+    /**
+     * 조직 생성 + 사업자 인증 제출. 생성자는 owner.
+     * 3중 검증: 사업자번호 형식·체크섬·국세청 상태(실존) + 중복 금지 + 사업자등록증 서류 제출.
+     * 소유권은 관리자 심사(approve)로 확정 — 생성 시점엔 pending, 인증 전 결제 불가.
+     */
     @Transactional
-    public OrgDto create(String name) {
+    public OrgDto create(String name, String businessNo, byte[] docBytes, String docFilename) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) throw new BadRequestException("회사 이름을 입력하세요.");
+        if (trimmed.length() > 80) throw new BadRequestException("회사 이름은 80자 이하여야 합니다.");
+
+        String bizNo = businessVerifier.normalize(businessNo);
+        if (!businessVerifier.isValidFormat(bizNo)) {
+            throw new BadRequestException("유효하지 않은 사업자등록번호입니다.");
+        }
+        if (organizations.existsByBusinessNo(bizNo)) {
+            throw new BadRequestException("이미 등록된 사업자등록번호입니다.");
+        }
+        if (!businessVerifier.isActiveBusiness(bizNo)) {
+            throw new BadRequestException("휴업·폐업 상태이거나 확인되지 않는 사업자입니다.");
+        }
+        if (docBytes == null || docBytes.length == 0) {
+            throw new BadRequestException("사업자등록증을 첨부하세요.");
+        }
+
         Customer me = currentUser.resolve();
-        Organization org = organizations.save(new Organization(tenant.companyId(), name.trim()));
+        String docKey = storage.store(docBytes, docFilename);
+        Organization org = new Organization(tenant.companyId(), trimmed);
+        org.submitBusiness(bizNo, docKey);
+        organizations.save(org);
         memberships.save(new Membership(org.getId(), me.getId(), Membership.OWNER));
-        return new OrgDto(org.getId(), org.getName(), Membership.OWNER);
+        return toOrgDto(org, Membership.OWNER);
     }
 
-    /** 내가 속한 조직 목록(+내 역할). */
+    /** 내가 속한 조직 목록(+내 역할·인증상태). */
     @Transactional(readOnly = true)
     public List<OrgDto> myOrganizations() {
         Customer me = currentUser.resolve();
         return memberships.findByCustomerId(me.getId()).stream()
-                .map(m -> new OrgDto(org(m.getOrganizationId()).getId(),
-                        org(m.getOrganizationId()).getName(), m.getRole()))
+                .map(m -> toOrgDto(org(m.getOrganizationId()), m.getRole()))
                 .toList();
+    }
+
+    private OrgDto toOrgDto(Organization org, String role) {
+        return new OrgDto(org.getId(), org.getName(), role, org.getVerifyStatus());
     }
 
     /** 특정 고객의 조직 내 멤버십(없으면 empty). */

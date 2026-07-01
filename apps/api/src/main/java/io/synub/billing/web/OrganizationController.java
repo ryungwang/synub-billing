@@ -5,8 +5,11 @@ import io.synub.billing.service.InvitationService;
 import io.synub.billing.service.OrganizationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /** 조직 생성/조회 + 멤버·초대 관리. */
@@ -27,10 +30,14 @@ public class OrganizationController {
         return organizations.myOrganizations();
     }
 
-    @PostMapping
+    /** 회사 생성 + 사업자 인증 제출(멀티파트: 이름·사업자번호·사업자등록증). */
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public OrgDto create(@Valid @RequestBody CreateOrgRequest req) {
-        return organizations.create(req.name());
+    public OrgDto create(@RequestParam String name,
+                         @RequestParam String businessNo,
+                         @RequestPart("document") MultipartFile document) throws IOException {
+        return organizations.create(name, businessNo,
+                document.getBytes(), document.getOriginalFilename());
     }
 
     // ---- 멤버 ----

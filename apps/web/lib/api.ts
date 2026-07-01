@@ -144,10 +144,21 @@ async function http<T>(
 
 export type OrgRole = "owner" | "billing_manager" | "member";
 
+export type VerifyStatus = "pending" | "verified" | "rejected";
+
 export interface ApiOrg {
   id: number;
   name: string;
   role: OrgRole;
+  verifyStatus: VerifyStatus;
+}
+
+export interface ApiAdminOrg {
+  id: number;
+  name: string;
+  businessNo: string | null;
+  verifyStatus: VerifyStatus;
+  rejectReason: string | null;
 }
 
 export interface ApiMember {
@@ -199,11 +210,33 @@ export const api = {
   products: () => http<ApiProduct[]>("/products"),
   dashboard: () => http<ApiDashboard>("/dashboard"),
   organizations: () => http<ApiOrg[]>("/organizations"),
-  createOrganization: (name: string) =>
-    http<ApiOrg>("/organizations", {
+  // 회사 생성 + 사업자 인증 서류(멀티파트). Content-Type 은 브라우저가 boundary 포함해 설정.
+  createOrganization: async (name: string, businessNo: string, document: File) => {
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("businessNo", businessNo);
+    fd.append("document", document);
+    const token = getToken();
+    const res = await fetch(`${BASE}/organizations`, {
       method: "POST",
-      body: JSON.stringify({ name }),
-    }),
+      headers: {
+        "X-Synub-Context": getContextHeader(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = `${res.status} ${res.statusText}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = b.detail;
+      } catch {
+        /* noop */
+      }
+      throw new Error(detail);
+    }
+    return res.json() as Promise<ApiOrg>;
+  },
 
   // 조직 멤버
   members: (orgId: number) => http<ApiMember[]>(`/organizations/${orgId}/members`),
@@ -239,6 +272,23 @@ export const api = {
   adminPayments: () => http<ApiAdminPayment[]>("/admin/payments"),
   adminRefund: (id: number) =>
     http<ApiAdminPayment>(`/admin/payments/${id}/refund`, { method: "POST" }),
+  adminOrganizations: () => http<ApiAdminOrg[]>("/admin/organizations"),
+  adminApproveOrg: (id: number) =>
+    http<void>(`/admin/organizations/${id}/approve`, { method: "POST" }),
+  adminRejectOrg: (id: number, reason: string) =>
+    http<void>(`/admin/organizations/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+  // 사업자등록증 서류를 토큰 인증으로 받아 blob URL 생성(새 탭 열람용)
+  adminOrgDocumentUrl: async (id: number) => {
+    const token = getToken();
+    const res = await fetch(`${BASE}/admin/organizations/${id}/document`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("서류를 불러올 수 없습니다.");
+    return URL.createObjectURL(await res.blob());
+  },
   subscriptions: () => http<ApiSubscription[]>("/subscriptions"),
   payments: () => http<ApiPayment[]>("/payments"),
   cards: () => http<ApiCard[]>("/billing/keys"),

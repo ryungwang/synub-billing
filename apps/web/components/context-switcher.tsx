@@ -107,7 +107,13 @@ export function ContextSwitcher() {
                 key={o.id}
                 icon={<Building2 className="size-4" />}
                 label={o.name}
-                hint={ROLE_LABEL[o.role] ?? o.role}
+                hint={
+                  o.verifyStatus === "verified"
+                    ? ROLE_LABEL[o.role] ?? o.role
+                    : o.verifyStatus === "pending"
+                    ? "인증 심사중"
+                    : "인증 반려"
+                }
                 active={orgId === o.id}
                 onClick={() => choose(`org:${o.id}`)}
               />
@@ -206,6 +212,18 @@ function Row({
   );
 }
 
+const INPUT_CLS =
+  "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[13px] font-semibold text-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function CreateOrgDialog({
   open,
   onOpenChange,
@@ -214,16 +232,21 @@ function CreateOrgDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const [name, setName] = React.useState("");
+  const [businessNo, setBusinessNo] = React.useState("");
+  const [file, setFile] = React.useState<File | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const ready = name.trim() && businessNo.trim() && file;
+
   async function create(e: React.FormEvent) {
     e.preventDefault();
+    if (!file) return;
     setBusy(true);
     setError(null);
     try {
-      const org = await api.createOrganization(name.trim());
-      setContext(`org:${org.id}`);
+      await api.createOrganization(name.trim(), businessNo.trim(), file);
+      // 생성 직후엔 인증 심사중(pending) — 컨텍스트 전환 없이 목록만 갱신
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "회사 생성에 실패했습니다.");
@@ -240,27 +263,48 @@ function CreateOrgDialog({
           </div>
           <DialogTitle>회사 만들기</DialogTitle>
           <DialogDescription>
-            회사 단위로 구독·결제를 관리합니다. 만들면 당신이 소유자가 됩니다.
+            사업자 정보를 확인한 뒤 사용할 수 있어요. 사업자등록증을 첨부하면 관리자 심사 후 인증됩니다.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={create} className="space-y-3">
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="회사 이름 (예: 우리회사)"
-            required
-            className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
+          <Field label="회사 이름">
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="예: 우리회사"
+              required
+              className={INPUT_CLS}
+            />
+          </Field>
+          <Field label="사업자등록번호">
+            <input
+              value={businessNo}
+              onChange={(e) => setBusinessNo(e.target.value)}
+              placeholder="000-00-00000"
+              inputMode="numeric"
+              required
+              className={INPUT_CLS}
+            />
+          </Field>
+          <Field label="사업자등록증">
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              required
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-semibold"
+            />
+          </Field>
           {error && (
             <div className="flex items-center gap-2 rounded-xl bg-destructive-subtle px-3 py-2.5 text-sm font-medium text-destructive-subtle-foreground">
               <AlertCircle className="size-4 shrink-0" />
               {error}
             </div>
           )}
-          <Button type="submit" size="lg" className="w-full" disabled={busy || !name.trim()}>
+          <Button type="submit" size="lg" className="w-full" disabled={busy || !ready}>
             {busy && <Loader2 className="animate-spin" />}
-            만들기
+            인증 요청하고 만들기
           </Button>
         </form>
       </DialogContent>
