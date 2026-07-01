@@ -87,6 +87,9 @@ public class OrganizationService {
         if (docBytes == null || docBytes.length == 0) {
             throw new BadRequestException("사업자등록증을 첨부하세요.");
         }
+        if (!isImageOrPdf(docBytes)) {
+            throw new BadRequestException("사업자등록증은 이미지(JPG/PNG) 또는 PDF 파일만 첨부할 수 있습니다.");
+        }
 
         Customer me = currentUser.resolve();
         String docKey = storage.store(docBytes, docFilename);
@@ -103,6 +106,15 @@ public class OrganizationService {
 
     private String squash(String s) {
         return s == null ? "" : s.replaceAll("\\s", "");
+    }
+
+    /** 매직바이트로 실제 파일 종류 확인(확장자 위조 방지). PDF/PNG/JPEG 만 허용. */
+    private boolean isImageOrPdf(byte[] b) {
+        if (b.length < 4) return false;
+        boolean pdf = b[0] == 0x25 && b[1] == 0x50 && b[2] == 0x44 && b[3] == 0x46;   // %PDF
+        boolean png = (b[0] & 0xFF) == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47;
+        boolean jpg = (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF;
+        return pdf || png || jpg;
     }
 
     /** 내가 속한 조직 목록(+내 역할·인증상태). */
