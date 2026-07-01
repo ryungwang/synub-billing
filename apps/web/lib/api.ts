@@ -31,6 +31,7 @@ export interface ApiProduct {
   description: string | null;
   domain: string | null;
   subscribers: number;
+  orgOnly: boolean;
   plans: ApiPlan[];
 }
 

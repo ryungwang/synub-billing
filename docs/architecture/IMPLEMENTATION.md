@@ -77,24 +77,12 @@
 
 ## 7. 데이터 모델 (Flyway)
 
-**빌링 `synub_billing`(schema `billing`)**
-| ver | 내용 |
-|-----|------|
-| V1~V5 | 초기 스키마·시드·결제시각 보정·청구엔진(retry_count, webhook_delivery)·테스트 플랜 |
-| V6 | organization, membership(역할) |
-| V7 | subscription/billing_key 에 owner_type/owner_id |
-| V8 | invitation |
-| V9 | plan.pricing_type + subscription.seats |
-| V10 | shedlock |
-| V11 | idempotency_key |
-| V12 | subscription.credit_balance |
+배포 전 단계라 마이그레이션을 **프로젝트별 단일 베이스라인 `V1__init.sql`로 스쿼시**했다(스키마 + 전 테이블·주요 컬럼 `COMMENT` + 데모 시드). 이후 변경은 V2부터 증분 추가.
 
-**SSO `synub_sso`(schema `sso`)**
-| ver | 내용 |
-|-----|------|
-| V1 | account |
-| V2 | signing_key, refresh_token |
-| V3 | account.is_admin |
+- **빌링 `synub_billing`(schema `billing`)** — `V1__init.sql`: product·plan·customer·billing_key·organization·membership·invitation·subscription·payment·usage_record·webhook_delivery·idempotency_key·shedlock + 데모 시드(제품4·플랜9·구독4·결제6).
+- **SSO `synub_sso`(schema `sso`)** — `V1__init.sql`: account·signing_key·refresh_token (계정은 런타임 시더 Demo/Admin가 생성).
+
+> 스키마는 DB `COMMENT`로 자기설명(테이블·핵심 컬럼 전부). `\d+ <table>`로 확인 가능.
 
 ---
 

@@ -84,7 +84,15 @@ export function LoginScreen() {
             {mode === "register" && (
               <Field label="이름" value={name} onChange={setName} type="text" placeholder="홍길동" autoComplete="name" />
             )}
-            <Field label="이메일" value={email} onChange={setEmail} type="email" placeholder="you@synub.io" autoComplete="email" required />
+            <Field
+              label="이메일"
+              value={email}
+              onChange={setEmail}
+              type={mode === "register" ? "email" : "text"}
+              placeholder="you@synub.io"
+              autoComplete={mode === "register" ? "email" : "username"}
+              required
+            />
             <Field label="비밀번호" value={password} onChange={setPassword} type="password" placeholder={mode === "register" ? "8자 이상" : "비밀번호"} autoComplete={mode === "login" ? "current-password" : "new-password"} required />
 
             {error && (

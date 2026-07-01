@@ -12,6 +12,7 @@ import {
 } from "@/components/checkout-dialog";
 import { ProductIcon } from "@/components/product-icon";
 import { api, type ApiProduct, type ApiPlan } from "@/lib/api";
+import { rawContext, subscribeContext, contextOrgId } from "@/lib/context";
 import { cn, formatKRW } from "@/lib/utils";
 
 export default function ProductsPage() {
@@ -20,6 +21,8 @@ export default function ProductsPage() {
   const [yearly, setYearly] = React.useState(false);
   const [target, setTarget] = React.useState<CheckoutTarget | null>(null);
   const [open, setOpen] = React.useState(false);
+  const ctx = React.useSyncExternalStore(subscribeContext, rawContext, () => "personal");
+  const isOrg = contextOrgId(ctx) !== null;
 
   React.useEffect(() => {
     api.products().then(setProducts).catch((e) => setError(e.message));
@@ -106,6 +109,7 @@ export default function ProductsPage() {
                   {product.category && (
                     <Badge variant="outline">{product.category}</Badge>
                   )}
+                  {product.orgOnly && <Badge>조직 전용</Badge>}
                 </div>
                 <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
                   {product.description}
@@ -186,10 +190,16 @@ export default function ProductsPage() {
                       className="mt-6 w-full"
                       size="lg"
                       variant={plan.highlight ? "primary" : "outline"}
+                      disabled={product.orgOnly && !isOrg}
                       onClick={() => subscribe(product, plan)}
                     >
-                      구독하기
+                      {product.orgOnly && !isOrg ? "회사 계정 전용" : "구독하기"}
                     </Button>
+                    {product.orgOnly && !isOrg && (
+                      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                        상단에서 회사로 전환하면 구독할 수 있어요
+                      </p>
+                    )}
                   </Card>
                 );
               })}

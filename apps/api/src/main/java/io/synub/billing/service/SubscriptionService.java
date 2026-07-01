@@ -62,6 +62,10 @@ public class SubscriptionService {
         Owner owner = scope.writeOwner();
         Plan plan = plans.findByIdAndProductCompanyId(req.planId(), tenant.companyId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
+        // 조직 전용 제품(예: 그룹웨어)은 회사(조직) 컨텍스트에서만 구독 가능.
+        if (plan.getProduct().isOrgOnly() && !owner.isOrganization()) {
+            throw new BadRequestException("이 제품은 회사(조직) 계정만 구독할 수 있습니다. 회사로 전환한 뒤 구독하세요.");
+        }
         // 카드는 같은 소유 스코프의 것이어야 한다(개인 카드로 회사 구독 불가, 그 반대도).
         BillingKey key = keys.findByIdAndOwnerTypeAndOwnerId(req.billingKeyId(), owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));

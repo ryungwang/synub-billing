@@ -242,8 +242,9 @@ function CreateOrgDialog({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // 본인인증 필수 — idvId 없으면 제출 불가
   const ready =
-    name.trim() && businessNo.trim() && repName.trim() && openDate.trim() && file;
+    name.trim() && businessNo.trim() && repName.trim() && openDate.trim() && file && idvId;
 
   async function verifyRep() {
     setVerifying(true);
@@ -355,6 +356,12 @@ function CreateOrgDialog({
               ) : null}
               {idvId ? "대표자 본인인증 완료" : "대표자 본인인증"}
             </button>
+          )}
+          {!identityConfigured && (
+            <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-[12px] text-muted-foreground">
+              <AlertCircle className="size-4 shrink-0" />
+              대표자 본인인증 설정이 필요합니다. (관리자 문의)
+            </div>
           )}
 
           <Field label="사업자등록증">

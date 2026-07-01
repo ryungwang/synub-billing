@@ -37,6 +37,10 @@ public class Product {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    /** 조직 전용 제품(예: 그룹웨어) — 회사 컨텍스트에서만 구독 가능. */
+    @Column(name = "org_only", nullable = false)
+    private boolean orgOnly;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -57,6 +61,7 @@ public class Product {
     public String getWebhookUrl() { return webhookUrl; }
     public String getStatus() { return status; }
     public int getSortOrder() { return sortOrder; }
+    public boolean isOrgOnly() { return orgOnly; }
     public Instant getCreatedAt() { return createdAt; }
     public List<Plan> getPlans() { return plans; }
 }

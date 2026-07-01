@@ -63,10 +63,9 @@ public class Organization {
         this.rejectReason = null;
     }
 
-    /** 대표자 본인인증 통과 → 소유권 자동 확정(즉시 인증완료). */
-    public void confirmByRepresentative(Instant when) {
+    /** 대표자 본인인증 통과 기록. 최종 인증은 관리자 서류 심사로(현재 pending 유지). */
+    public void markRepVerified() {
         this.repVerified = true;
-        approve(when);
     }
 
     public void approve(Instant when) {

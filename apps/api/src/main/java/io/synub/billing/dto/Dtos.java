@@ -18,7 +18,7 @@ public final class Dtos {
 
     public record ProductDto(
             String serviceCode, String name, String category, String description,
-            String domain, long subscribers, List<PlanDto> plans) {}
+            String domain, long subscribers, boolean orgOnly, List<PlanDto> plans) {}
 
     // ---- 결제수단 ----
     public record CardDto(

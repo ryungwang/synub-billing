@@ -77,10 +77,12 @@ public class OrganizationService {
             throw new BadRequestException("휴업·폐업 상태이거나 확인되지 않는 사업자입니다.");
         }
 
-        // 대표자 본인인증(있으면): 인증 실명이 대표자명과 일치해야 함. 불일치 시 거부(도용 방지).
+        // 대표자 본인인증 필수 — 인증이 없거나 실명이 대표자명과 다르면 요청 불가(도용 방지).
         Optional<String> verifiedName = identityVerifier.verifiedName(identityVerificationId);
-        if (verifiedName.isPresent()
-                && !squash(verifiedName.get()).equals(squash(rep))) {
+        if (verifiedName.isEmpty()) {
+            throw new BadRequestException("대표자 본인인증이 필요합니다.");
+        }
+        if (!squash(verifiedName.get()).equals(squash(rep))) {
             throw new BadRequestException("본인인증 이름과 대표자명이 일치하지 않습니다.");
         }
 
@@ -91,14 +93,12 @@ public class OrganizationService {
             throw new BadRequestException("사업자등록증은 이미지(JPG/PNG) 또는 PDF 파일만 첨부할 수 있습니다.");
         }
 
+        // 진위확인 + 본인인증 둘 다 통과 → 인증 요청 접수(pending). 최종 승인은 관리자 서류 심사.
         Customer me = currentUser.resolve();
         String docKey = storage.store(docBytes, docFilename);
         Organization org = new Organization(tenant.companyId(), trimmed);
         org.submitBusiness(bizNo, rep, openDt, docKey);
-        // 대표자 본인인증 통과 → 소유권 자동 확정(즉시 인증완료). 없으면 pending(관리자 서류 심사).
-        if (verifiedName.isPresent()) {
-            org.confirmByRepresentative(java.time.Instant.now());
-        }
+        org.markRepVerified(); // 본인인증 통과 기록(관리자 심사 참고), verify_status 는 pending 유지
         organizations.save(org);
         memberships.save(new Membership(org.getId(), me.getId(), Membership.OWNER));
         return toOrgDto(org, Membership.OWNER);
