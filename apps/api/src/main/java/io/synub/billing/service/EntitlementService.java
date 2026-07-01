@@ -9,7 +9,6 @@ import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.repo.SubscriptionRepository;
-import io.synub.billing.tenant.CurrentTenant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,17 +26,15 @@ public class EntitlementService {
     private final SubscriptionRepository subscriptions;
     private final MembershipRepository memberships;
     private final OrganizationRepository organizations;
-    private final CurrentTenant tenant;
     private final CurrentUser currentUser;
 
     public EntitlementService(CustomerRepository customers, SubscriptionRepository subscriptions,
                               MembershipRepository memberships, OrganizationRepository organizations,
-                              CurrentTenant tenant, CurrentUser currentUser) {
+                              CurrentUser currentUser) {
         this.customers = customers;
         this.subscriptions = subscriptions;
         this.memberships = memberships;
         this.organizations = organizations;
-        this.tenant = tenant;
         this.currentUser = currentUser;
     }
 
@@ -47,7 +44,7 @@ public class EntitlementService {
                 ? currentUser.externalId() : customerExternalId;
 
         Customer customer = customers
-                .findByCompanyIdAndExternalId(tenant.companyId(), externalId)
+                .findByExternalId(externalId)
                 .orElse(null);
         if (customer == null) {
             return new EntitlementDto(false, null, null, List.of(), null);

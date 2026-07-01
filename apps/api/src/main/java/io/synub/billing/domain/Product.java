@@ -13,9 +13,6 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "company_id", nullable = false)
-    private Long companyId;
-
     @Column(name = "service_code", nullable = false)
     private String serviceCode;
 
@@ -55,7 +52,6 @@ public class Product {
     protected Product() {}
 
     public Long getId() { return id; }
-    public Long getCompanyId() { return companyId; }
     public String getServiceCode() { return serviceCode; }
     public String getName() { return name; }
     public String getCategory() { return category; }

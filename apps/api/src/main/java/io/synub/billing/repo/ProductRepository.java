@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByCompanyIdAndStatusOrderBySortOrderAsc(Long companyId, String status);
-    Optional<Product> findByCompanyIdAndServiceCode(Long companyId, String serviceCode);
+    List<Product> findByStatusOrderBySortOrderAsc(String status);
+    Optional<Product> findByServiceCode(String serviceCode);
 }

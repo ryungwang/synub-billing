@@ -30,8 +30,6 @@ server:
   port: 8088
 
 app:
-  tenant:
-    default-company-id: 1
   cors:
     allowed-origins: "http://localhost:3100,http://localhost:3000"
   billing:

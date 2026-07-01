@@ -6,7 +6,6 @@ import io.synub.billing.auth.IdentityContext;
 import io.synub.billing.config.AppProperties;
 import io.synub.billing.domain.Customer;
 import io.synub.billing.repo.CustomerRepository;
-import io.synub.billing.tenant.CurrentTenant;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,14 +19,12 @@ public class CurrentUser {
     public static final String DEMO_EXTERNAL_ID = "demo-user";
 
     private final CustomerRepository customers;
-    private final CurrentTenant tenant;
     private final CustomerProvisioning provisioning;
     private final AppProperties.Sso sso;
 
-    public CurrentUser(CustomerRepository customers, CurrentTenant tenant,
+    public CurrentUser(CustomerRepository customers,
                        CustomerProvisioning provisioning, AppProperties props) {
         this.customers = customers;
-        this.tenant = tenant;
         this.provisioning = provisioning;
         this.sso = props.sso();
     }
@@ -66,7 +63,7 @@ public class CurrentUser {
      */
     public Customer resolve() {
         String externalId = externalId();
-        return customers.findByCompanyIdAndExternalId(tenant.companyId(), externalId)
+        return customers.findByExternalId(externalId)
                 .orElseGet(() -> provisioning.ensure(externalId, email()));
     }
 }

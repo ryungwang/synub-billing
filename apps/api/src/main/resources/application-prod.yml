@@ -34,8 +34,6 @@ server:
   port: 8080
 
 app:
-  tenant:
-    default-company-id: ${DEFAULT_COMPANY_ID:1}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
   billing:

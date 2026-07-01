@@ -2,7 +2,6 @@ package io.synub.billing.service;
 
 import io.synub.billing.domain.Customer;
 import io.synub.billing.repo.CustomerRepository;
-import io.synub.billing.tenant.CurrentTenant;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -17,26 +16,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerProvisioning {
 
     private final CustomerRepository customers;
-    private final CurrentTenant tenant;
 
-    public CustomerProvisioning(CustomerRepository customers, CurrentTenant tenant) {
+    public CustomerProvisioning(CustomerRepository customers) {
         this.customers = customers;
-        this.tenant = tenant;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Customer ensure(String externalId, String email) {
-        Long companyId = tenant.companyId();
-        return customers.findByCompanyIdAndExternalId(companyId, externalId)
-                .orElseGet(() -> insert(companyId, externalId, email));
+        return customers.findByExternalId(externalId)
+                .orElseGet(() -> insert(externalId, email));
     }
 
-    private Customer insert(Long companyId, String externalId, String email) {
+    private Customer insert(String externalId, String email) {
         try {
-            return customers.save(new Customer(companyId, externalId, email));
+            return customers.save(new Customer(externalId, email));
         } catch (DataIntegrityViolationException race) {
             // 동시 첫 요청 경합 — 유니크 제약 충돌 시 이미 생성된 레코드를 다시 조회
-            return customers.findByCompanyIdAndExternalId(companyId, externalId)
+            return customers.findByExternalId(externalId)
                     .orElseThrow(() -> race);
         }
     }

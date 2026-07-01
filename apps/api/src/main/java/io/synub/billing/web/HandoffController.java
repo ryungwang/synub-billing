@@ -7,7 +7,6 @@ import io.synub.billing.dto.Dtos.HandoffDto;
 import io.synub.billing.repo.ProductRepository;
 import io.synub.billing.service.CurrentUser;
 import io.synub.billing.service.OrganizationService;
-import io.synub.billing.tenant.CurrentTenant;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
 import org.springframework.web.bind.annotation.*;
@@ -30,15 +29,13 @@ public class HandoffController {
     private final OrganizationService organizations;
     private final ProductRepository products;
     private final CurrentUser currentUser;
-    private final CurrentTenant tenant;
     private final AppProperties props;
 
     public HandoffController(OrganizationService organizations, ProductRepository products,
-                             CurrentUser currentUser, CurrentTenant tenant, AppProperties props) {
+                             CurrentUser currentUser, AppProperties props) {
         this.organizations = organizations;
         this.products = products;
         this.currentUser = currentUser;
-        this.tenant = tenant;
         this.props = props;
     }
 
@@ -49,7 +46,7 @@ public class HandoffController {
         if (!org.isVerified() || org.getOrgCode() == null) {
             throw new BadRequestException("인증 완료된 조직만 초기설정할 수 있습니다.");
         }
-        Product product = products.findByCompanyIdAndServiceCode(tenant.companyId(), service)
+        Product product = products.findByServiceCode(service)
                 .orElseThrow(() -> new NotFoundException("제품을 찾을 수 없습니다: " + service));
         if (product.getOnboardingUrl() == null || product.getOnboardingUrl().isBlank()) {
             throw new BadRequestException("이 제품은 초기설정 온보딩을 제공하지 않습니다.");

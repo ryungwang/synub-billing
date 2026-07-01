@@ -41,11 +41,11 @@ public class OrgMemberProvisioningService {
         }
         String role = normalizeRole(req.role());
 
-        // 통합계정 → 빌링 고객 JIT 매핑(테넌트=조직의 회사)
+        // 통합계정 → 빌링 고객 JIT 매핑
         Customer customer = customers
-                .findByCompanyIdAndExternalId(org.getCompanyId(), req.externalId())
+                .findByExternalId(req.externalId())
                 .orElseGet(() -> customers.save(
-                        new Customer(org.getCompanyId(), req.externalId(), req.email())));
+                        new Customer(req.externalId(), req.email())));
 
         // 멱등: 이미 멤버면 유지(다운그레이드 방지), 아니면 추가
         var existing = memberships.findByOrganizationIdAndCustomerId(org.getId(), customer.getId());

@@ -5,12 +5,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(Tenant tenant, Cors cors, Billing billing,
+public record AppProperties(Cors cors, Billing billing,
                             Webhook webhook, Portone portone, Sso sso, Mail mail,
                             Business business, Storage storage,
                             Internal internal, Entitlement entitlement) {
-
-    public record Tenant(long defaultCompanyId) {}
 
     /** 내부 운영 엔드포인트(/internal) 보호용 시크릿. */
     public record Internal(String secret) {}

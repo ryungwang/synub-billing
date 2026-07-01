@@ -11,9 +11,6 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "company_id", nullable = false)
-    private Long companyId;
-
     @Column(name = "external_id", nullable = false)
     private String externalId;
 
@@ -26,8 +23,7 @@ public class Customer {
 
     protected Customer() {}
 
-    public Customer(Long companyId, String externalId, String email) {
-        this.companyId = companyId;
+    public Customer(String externalId, String email) {
         this.externalId = externalId;
         this.email = email;
     }
@@ -40,7 +36,6 @@ public class Customer {
     }
 
     public Long getId() { return id; }
-    public Long getCompanyId() { return companyId; }
     public String getExternalId() { return externalId; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }

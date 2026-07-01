@@ -4,7 +4,6 @@ import io.synub.billing.domain.*;
 import io.synub.billing.dto.Dtos.*;
 import io.synub.billing.gateway.PaymentGateway;
 import io.synub.billing.repo.*;
-import io.synub.billing.tenant.CurrentTenant;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
 import org.springframework.stereotype.Service;
@@ -27,14 +26,13 @@ public class SubscriptionService {
     private final PaymentGateway gateway;
     private final CurrentUser currentUser;
     private final CurrentScope scope;
-    private final CurrentTenant tenant;
     private final DtoMapper mapper;
     private final SubscriptionWebhooks webhooks;
 
     public SubscriptionService(SubscriptionRepository subscriptions, PlanRepository plans,
                                BillingKeyRepository keys, PaymentRepository payments,
                                PaymentGateway gateway, CurrentUser currentUser, CurrentScope scope,
-                               CurrentTenant tenant, DtoMapper mapper,
+                               DtoMapper mapper,
                                SubscriptionWebhooks webhooks) {
         this.subscriptions = subscriptions;
         this.plans = plans;
@@ -43,7 +41,6 @@ public class SubscriptionService {
         this.gateway = gateway;
         this.currentUser = currentUser;
         this.scope = scope;
-        this.tenant = tenant;
         this.mapper = mapper;
         this.webhooks = webhooks;
     }
@@ -60,7 +57,7 @@ public class SubscriptionService {
     public SubscriptionDto create(CreateSubscriptionRequest req) {
         Customer me = currentUser.resolve();
         Owner owner = scope.writeOwner();
-        Plan plan = plans.findByIdAndProductCompanyId(req.planId(), tenant.companyId())
+        Plan plan = plans.findById(req.planId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
         // 조직 전용 제품(예: 그룹웨어)은 회사(조직) 컨텍스트에서만 구독 가능.
         if (plan.getProduct().isOrgOnly() && !owner.isOrganization()) {
@@ -122,7 +119,7 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionDto changePlan(Long id, ChangePlanRequest req) {
         Subscription sub = findOwned(id);
-        Plan newPlan = plans.findByIdAndProductCompanyId(req.planId(), tenant.companyId())
+        Plan newPlan = plans.findById(req.planId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
         sub.setPlan(newPlan);
         webhooks.fire(sub, SubscriptionWebhooks.PLAN_CHANGED);

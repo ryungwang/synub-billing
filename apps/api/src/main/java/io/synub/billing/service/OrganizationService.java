@@ -9,7 +9,6 @@ import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.storage.StorageService;
-import io.synub.billing.tenant.CurrentTenant;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.ForbiddenException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
@@ -30,12 +29,11 @@ public class OrganizationService {
     private final IdentityVerifier identityVerifier;
     private final StorageService storage;
     private final CurrentUser currentUser;
-    private final CurrentTenant tenant;
 
     public OrganizationService(OrganizationRepository organizations, MembershipRepository memberships,
                                CustomerRepository customers, BusinessVerifier businessVerifier,
                                IdentityVerifier identityVerifier, StorageService storage,
-                               CurrentUser currentUser, CurrentTenant tenant) {
+                               CurrentUser currentUser) {
         this.organizations = organizations;
         this.memberships = memberships;
         this.customers = customers;
@@ -43,7 +41,6 @@ public class OrganizationService {
         this.identityVerifier = identityVerifier;
         this.storage = storage;
         this.currentUser = currentUser;
-        this.tenant = tenant;
     }
 
     /**
@@ -96,7 +93,7 @@ public class OrganizationService {
         // 진위확인 + 본인인증 둘 다 통과 → 인증 요청 접수(pending). 최종 승인은 관리자 서류 심사.
         Customer me = currentUser.resolve();
         String docKey = storage.store(docBytes, docFilename);
-        Organization org = new Organization(tenant.companyId(), trimmed);
+        Organization org = new Organization(trimmed);
         org.submitBusiness(bizNo, rep, openDt, docKey);
         org.markRepVerified(); // 본인인증 통과 기록(관리자 심사 참고), verify_status 는 pending 유지
         organizations.save(org);

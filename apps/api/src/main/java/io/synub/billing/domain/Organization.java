@@ -13,9 +13,6 @@ public class Organization {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "company_id", nullable = false)
-    private Long companyId;
-
     private String name;
 
     @Column(name = "business_no")
@@ -52,8 +49,7 @@ public class Organization {
 
     protected Organization() {}
 
-    public Organization(Long companyId, String name) {
-        this.companyId = companyId;
+    public Organization(String name) {
         this.name = name;
     }
 
@@ -91,7 +87,6 @@ public class Organization {
     public boolean isVerified() { return "verified".equals(verifyStatus); }
 
     public Long getId() { return id; }
-    public Long getCompanyId() { return companyId; }
     public String getName() { return name; }
     public String getBusinessNo() { return businessNo; }
     public String getBusinessDoc() { return businessDoc; }
