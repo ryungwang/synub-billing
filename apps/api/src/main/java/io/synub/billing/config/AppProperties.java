@@ -6,9 +6,15 @@ import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(Tenant tenant, Cors cors, Billing billing,
-                            Webhook webhook, Portone portone, Sso sso) {
+                            Webhook webhook, Portone portone, Sso sso, Mail mail) {
 
     public record Tenant(long defaultCompanyId) {}
+
+    /**
+     * 발신 이메일. from=발신 주소, appBaseUrl=이메일 내 링크 대상(앱 URL).
+     * smtpEnabled=true면 실제 SMTP(SES) 발송, false면 로컬 로그 발송(개발).
+     */
+    public record Mail(String from, String appBaseUrl, boolean smtpEnabled) {}
 
     /**
      * SSO(통합계정) 연동 — 민감 프로젝트라 실제 JWT 서명검증을 강제한다.

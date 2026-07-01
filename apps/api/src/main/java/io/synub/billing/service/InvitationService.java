@@ -5,6 +5,7 @@ import io.synub.billing.domain.Invitation;
 import io.synub.billing.domain.Membership;
 import io.synub.billing.domain.Organization;
 import io.synub.billing.dto.Dtos.InvitationDto;
+import io.synub.billing.mail.InvitationMailer;
 import io.synub.billing.repo.InvitationRepository;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.ForbiddenException;
@@ -23,19 +24,21 @@ public class InvitationService {
 
     private final InvitationRepository invitations;
     private final OrganizationService organizations;
+    private final InvitationMailer mailer;
     private final CurrentUser currentUser;
 
     public InvitationService(InvitationRepository invitations, OrganizationService organizations,
-                             CurrentUser currentUser) {
+                             InvitationMailer mailer, CurrentUser currentUser) {
         this.invitations = invitations;
         this.organizations = organizations;
+        this.mailer = mailer;
         this.currentUser = currentUser;
     }
 
-    /** 초대 생성. owner/billing_manager 만. 역할은 member 또는 billing_manager. */
+    /** 초대 생성. owner/billing_manager 만. 역할은 member 또는 billing_manager. 초대 이메일 발송. */
     @Transactional
     public InvitationDto invite(Long organizationId, String email, String role) {
-        Membership manager = organizations.requireManager(organizationId);
+        organizations.requireManager(organizationId);
         if (Membership.OWNER.equals(role)) {
             throw new BadRequestException("owner 역할로는 초대할 수 없습니다.");
         }
@@ -44,8 +47,11 @@ public class InvitationService {
         invitations.findByOrganizationIdAndEmailAndStatus(organizationId, normalized, Invitation.PENDING)
                 .ifPresent(x -> { throw new BadRequestException("이미 초대한 이메일입니다."); });
 
-        Invitation inv = invitations.save(
-                new Invitation(organizationId, normalized, role, currentUser.resolve().getId()));
+        Customer me = currentUser.resolve();
+        Invitation inv = invitations.save(new Invitation(organizationId, normalized, role, me.getId()));
+        // 초대 이메일 발송(비동기 — 실패해도 초대는 유효, 앱 내 "받은 초대"로도 확인 가능)
+        Organization org = organizations.org(organizationId);
+        mailer.sendInvitation(normalized, org.getName(), role, me.getEmail());
         return toDto(inv, null);
     }
 

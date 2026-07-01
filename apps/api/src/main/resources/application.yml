@@ -45,6 +45,11 @@ app:
     # 토스페이먼츠 채널(synub-toss). 이니시스에서 전환.
     channel-key: ${PORTONE_CHANNEL_KEY:channel-key-b52b5071-01d9-4e6a-a352-a273a8b2e596}
     api-secret: ${PORTONE_API_SECRET:}
+  mail:
+    from: ${MAIL_FROM:no-reply@synub.io}
+    app-base-url: ${APP_BASE_URL:http://localhost:3100}
+    # 로컬은 false → 로그로 발송(SMTP 서버 불필요). 운영은 true + spring.mail(SES SMTP).
+    smtp-enabled: ${MAIL_SMTP_ENABLED:false}
   sso:
     # 통합계정(SSO) 토큰 검증. mode=jwks(SSO 공개키, 기본) | hs256(공유키).
     # 로컬 SSO(apps/sso, 8090)가 JWKS를 제공 → 기본 jwks. SSO 미기동이어도 무토큰 요청은 dev-fallback으로 동작.

@@ -20,6 +20,15 @@ spring:
     schemas: billing
     default-schema: billing
     create-schemas: true
+  mail:
+    # AWS SES SMTP (또는 다른 SMTP). 시크릿은 env 주입.
+    host: ${MAIL_HOST:email-smtp.ap-northeast-2.amazonaws.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   port: 8080
@@ -41,6 +50,10 @@ app:
     store-id: ${PORTONE_STORE_ID}
     channel-key: ${PORTONE_CHANNEL_KEY}
     api-secret: ${PORTONE_API_SECRET}
+  mail:
+    from: ${MAIL_FROM:no-reply@synub.io}
+    app-base-url: ${APP_BASE_URL}
+    smtp-enabled: ${MAIL_SMTP_ENABLED:true}
   sso:
     # 운영: SSO 공개키(JWKS) 서명검증. 시크릿 디폴트 금지, dev-fallback 반드시 off(토큰 필수).
     mode: ${SSO_MODE:jwks}
