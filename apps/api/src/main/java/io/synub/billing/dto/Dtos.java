@@ -115,4 +115,7 @@ public final class Dtos {
             String email, String name, String role) {}
 
     public record OrgMemberDto(String orgCode, String externalId, String role, boolean created) {}
+
+    /** 그룹웨어 초기설정 핸드오프 링크(서명 포함). */
+    public record HandoffDto(String url) {}
 }

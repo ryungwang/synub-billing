@@ -41,6 +41,10 @@ public class Product {
     @Column(name = "org_only", nullable = false)
     private boolean orgOnly;
 
+    /** 제품 초기설정 온보딩 페이지 URL. 있으면 구독 후 서명 핸드오프 링크 제공. */
+    @Column(name = "onboarding_url")
+    private String onboardingUrl;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -62,6 +66,7 @@ public class Product {
     public String getStatus() { return status; }
     public int getSortOrder() { return sortOrder; }
     public boolean isOrgOnly() { return orgOnly; }
+    public String getOnboardingUrl() { return onboardingUrl; }
     public Instant getCreatedAt() { return createdAt; }
     public List<Plan> getPlans() { return plans; }
 }
