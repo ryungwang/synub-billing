@@ -69,6 +69,11 @@ public final class Dtos {
 
     public record ChangePlanRequest(@NotNull Long planId) {}
 
+    /** 제품→빌링 사용량 보고. */
+    public record ReportUsageRequest(
+            @NotNull String customer, @NotNull String service,
+            String label, String unit, int used, Integer limit) {}
+
     public record ChangeSeatsRequest(@NotNull Integer seats) {}
 
     // ---- 조직/역할 ----

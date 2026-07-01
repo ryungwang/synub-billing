@@ -156,6 +156,47 @@ public class PortOnePaymentGateway implements PaymentGateway {
         }
     }
 
+    @Override
+    public java.util.Optional<BillingKeyInfo> lookupBillingKey(String pgBillingKey) {
+        if (pgBillingKey == null || pgBillingKey.isBlank()) return java.util.Optional.empty();
+        String url = cfg.apiBase() + "/billing-keys/"
+                + URLEncoder.encode(pgBillingKey, StandardCharsets.UTF_8);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "PortOne " + cfg.apiSecret())
+                    .GET()
+                    .build();
+            HttpResponse<String> res = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() / 100 != 2 || res.body() == null || res.body().isBlank()) {
+                log.warn("포트원 빌링키 조회 실패: HTTP {}", res.statusCode());
+                return java.util.Optional.empty();
+            }
+            JsonNode root = json.readTree(res.body());
+            // methods[0].card 또는 card 하위에서 카드 정보 추출(채널별 상이 대비 best-effort)
+            JsonNode card = root.path("methods").isArray() && !root.path("methods").isEmpty()
+                    ? root.path("methods").get(0).path("card")
+                    : root.path("card");
+            if (card.isMissingNode()) return java.util.Optional.empty();
+            String company = firstNonBlank(card.path("issuer").asText(null),
+                    card.path("publisher").asText(null), card.path("name").asText(null));
+            String number = card.path("number").asText("");
+            String last4 = number.replaceAll("[^0-9]", "");
+            last4 = last4.length() >= 4 ? last4.substring(last4.length() - 4) : (last4.isEmpty() ? null : last4);
+            String type = card.path("type").asText(null);
+            return java.util.Optional.of(new BillingKeyInfo(company, last4, type));
+        } catch (Exception e) {
+            log.error("포트원 빌링키 조회 오류: {}", e.toString());
+            return java.util.Optional.empty();
+        }
+    }
+
+    private static String firstNonBlank(String... vals) {
+        for (String v : vals) if (v != null && !v.isBlank()) return v;
+        return null;
+    }
+
     private static String pickStatus(JsonNode node) {
         if (node == null) return null;
         if (node.has("status")) return node.get("status").asText();

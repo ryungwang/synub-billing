@@ -22,6 +22,13 @@ public interface PaymentGateway {
 
     record PaymentInfo(String status, int amount) {}
 
+    /** 빌링키 카드 정보 조회(카드사·끝4자리 보강). 미지원이면 empty. PortOne 만 지원. */
+    default java.util.Optional<BillingKeyInfo> lookupBillingKey(String pgBillingKey) {
+        return java.util.Optional.empty();
+    }
+
+    record BillingKeyInfo(String cardCompany, String cardLast4, String cardType) {}
+
     record RefundResult(boolean success, String failureReason) {
         public static RefundResult ok() { return new RefundResult(true, null); }
         public static RefundResult fail(String reason) { return new RefundResult(false, reason); }

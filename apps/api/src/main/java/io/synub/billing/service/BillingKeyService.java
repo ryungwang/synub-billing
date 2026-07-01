@@ -4,6 +4,7 @@ import io.synub.billing.domain.BillingKey;
 import io.synub.billing.domain.Customer;
 import io.synub.billing.dto.Dtos.CardDto;
 import io.synub.billing.dto.Dtos.RegisterBillingKeyRequest;
+import io.synub.billing.gateway.PaymentGateway;
 import io.synub.billing.repo.BillingKeyRepository;
 import io.synub.billing.repo.SubscriptionRepository;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
@@ -21,14 +22,17 @@ public class BillingKeyService {
     private final CurrentUser currentUser;
     private final CurrentScope scope;
     private final DtoMapper mapper;
+    private final PaymentGateway gateway;
 
     public BillingKeyService(BillingKeyRepository keys, SubscriptionRepository subscriptions,
-                             CurrentUser currentUser, CurrentScope scope, DtoMapper mapper) {
+                             CurrentUser currentUser, CurrentScope scope, DtoMapper mapper,
+                             PaymentGateway gateway) {
         this.keys = keys;
         this.subscriptions = subscriptions;
         this.currentUser = currentUser;
         this.scope = scope;
         this.mapper = mapper;
+        this.gateway = gateway;
     }
 
     @Transactional(readOnly = true)
@@ -55,8 +59,18 @@ public class BillingKeyService {
         if (makePrimary) {
             existing.forEach(k -> k.setPrimary(false));
         }
-        BillingKey key = new BillingKey(me, req.pgBillingKey(), req.cardCompany(),
-                req.cardLast4(), req.cardType(), makePrimary);
+        // 카드 메타 미제공(실연동 발급) 시 PG 조회로 카드사·끝4자리 보강
+        String cardCompany = req.cardCompany(), cardLast4 = req.cardLast4(), cardType = req.cardType();
+        if (cardCompany == null || cardLast4 == null) {
+            var info = gateway.lookupBillingKey(req.pgBillingKey());
+            if (info.isPresent()) {
+                if (cardCompany == null) cardCompany = info.get().cardCompany();
+                if (cardLast4 == null) cardLast4 = info.get().cardLast4();
+                if (cardType == null) cardType = info.get().cardType();
+            }
+        }
+        BillingKey key = new BillingKey(me, req.pgBillingKey(), cardCompany,
+                cardLast4, cardType, makePrimary);
         key.setOwner(owner.type(), owner.id());
         keys.save(key);
         return mapper.toCard(key, 0);

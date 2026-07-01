@@ -33,6 +33,12 @@ public class Invitation {
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
+    /** 초대 유효기간(일). */
+    public static final long EXPIRY_DAYS = 7;
+
     protected Invitation() {}
 
     public Invitation(Long organizationId, String email, String role, Long invitedByCustomerId) {
@@ -41,9 +47,16 @@ public class Invitation {
         this.role = role;
         this.status = PENDING;
         this.invitedByCustomerId = invitedByCustomerId;
+        this.expiresAt = Instant.now().plus(java.time.Duration.ofDays(EXPIRY_DAYS));
     }
 
     public boolean isPending() { return PENDING.equals(status); }
+
+    public boolean isExpired() {
+        return expiresAt != null && Instant.now().isAfter(expiresAt);
+    }
+
+    public Instant getExpiresAt() { return expiresAt; }
 
     public Long getId() { return id; }
     public Long getOrganizationId() { return organizationId; }

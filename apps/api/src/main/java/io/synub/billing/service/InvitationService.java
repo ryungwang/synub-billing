@@ -60,6 +60,7 @@ public class InvitationService {
     public List<InvitationDto> organizationInvitations(Long organizationId) {
         organizations.requireManager(organizationId);
         return invitations.findByOrganizationIdAndStatus(organizationId, Invitation.PENDING).stream()
+                .filter(i -> !i.isExpired())
                 .map(i -> toDto(i, null))
                 .toList();
     }
@@ -82,6 +83,7 @@ public class InvitationService {
         String email = currentUser.email();
         if (email == null || email.isBlank()) return List.of();
         return invitations.findByEmailAndStatus(email.trim().toLowerCase(), Invitation.PENDING).stream()
+                .filter(i -> !i.isExpired())
                 .map(i -> toDto(i, organizations.org(i.getOrganizationId())))
                 .toList();
     }
@@ -105,6 +107,7 @@ public class InvitationService {
     private Invitation requireMineAndPending(Long invitationId) {
         Invitation inv = load(invitationId);
         if (!inv.isPending()) throw new BadRequestException("이미 처리된 초대입니다.");
+        if (inv.isExpired()) throw new BadRequestException("만료된 초대입니다. 다시 초대를 요청하세요.");
         String myEmail = currentUser.email();
         if (myEmail == null || !inv.getEmail().equalsIgnoreCase(myEmail.trim())) {
             throw new ForbiddenException("본인에게 온 초대가 아닙니다.");

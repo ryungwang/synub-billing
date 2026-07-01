@@ -2,6 +2,7 @@ package io.synub.billing.service;
 
 import io.synub.billing.domain.*;
 import io.synub.billing.dto.Dtos.*;
+import io.synub.billing.repo.UsageRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -17,6 +18,12 @@ public class DtoMapper {
 
     /** 청구일 계산 타임존 — Asia/Seoul (PRD 비기능 요구사항). */
     public static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    private final UsageRepository usageRepo;
+
+    public DtoMapper(UsageRepository usageRepo) {
+        this.usageRepo = usageRepo;
+    }
 
     /**
      * 제품이 보고하는 "이번 달 사용량" 스탠드인.
@@ -53,7 +60,11 @@ public class DtoMapper {
         LocalDate started = LocalDate.ofInstant(s.getStartedAt(), KST);
         int months = (int) Math.max(1, ChronoUnit.MONTHS.between(started, LocalDate.now(KST)) + 1);
         String card = key.getCardCompany() + " ····" + key.getCardLast4();
-        UsageDto usage = USAGE.get(product.getServiceCode());
+        // 제품이 보고한 실사용량 우선, 없으면 데모 스탠드인 폴백
+        UsageDto usage = usageRepo
+                .findByExternalIdAndServiceCode(s.getCustomer().getExternalId(), product.getServiceCode())
+                .map(u -> new UsageDto(u.getLabel(), u.getUnit(), u.getUsed(), u.getLimitQty()))
+                .orElse(USAGE.get(product.getServiceCode()));
         return new SubscriptionDto(
                 s.getId(), product.getServiceCode(), product.getName(), plan.getName(),
                 s.chargeAmount(), plan.getBillingCycle(), s.getStatus(),

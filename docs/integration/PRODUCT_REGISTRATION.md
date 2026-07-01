@@ -251,6 +251,19 @@ Header: X-Service-Key: {서비스 키}     ← 필수(서버-투-서버 인증)
 - 구독이 없거나 `suspended`/`canceled`면 `{active:false, plan:null, expiresAt:null, features:[]}`.
 - **판단 기준은 항상 이 API(빌링)다.** 제품이 구독 상태를 자체 저장하더라도, 최종 권한은 빌링 조회로 확정할 것.
 
+#### 사용량 보고 (선택) — 제품이 빌링에 사용량 push
+
+대시보드/구독 화면의 "이번 달 사용량"을 실데이터로 채우려면 제품이 주기적으로 보고한다.
+(보고 안 하면 데모 스탠드인 값이 표시된다.)
+
+```
+POST /api/usage
+Header: X-Service-Key: {서비스 키}
+{ "customer":"{externalId}", "service":"{serviceCode}",
+  "label":"문서 분석", "unit":"건", "used":1777, "limit":3000 }
+```
+`(customer, service)` 기준 upsert(최신값 유지). 서비스 키 필수(무인증 403).
+
 ---
 
 ### ② 웹훅 통보 — 빌링이 제품에게 알려줌 (push)
