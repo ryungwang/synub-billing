@@ -11,7 +11,8 @@
 ## 📁 architecture/ — 빌링 내부 설계·의사결정
 빌링 자체의 **아키텍처 결정과 청사진**. 구현 방향·확정된 모델이 여기 있다.
 
-- [`architecture/IDENTITY_AND_ORG_BILLING.md`](architecture/IDENTITY_AND_ORG_BILLING.md) — 통합계정(SSO) · 조직 · 역할 · **개인/회사 컨텍스트 전환(Option 1 확정)** 신원 모델
+- [`architecture/IMPLEMENTATION.md`](architecture/IMPLEMENTATION.md) — **구현 현황(as-built)**: 시스템 구성·신원·조직·과금·운영·데이터모델·엔드포인트·실행법. **"지금 뭐가 돼 있나"는 여기부터.**
+- [`architecture/IDENTITY_AND_ORG_BILLING.md`](architecture/IDENTITY_AND_ORG_BILLING.md) — 통합계정(SSO) · 조직 · 역할 · **개인/회사 컨텍스트 전환(Option 1 확정)** 신원 모델(설계 근거)
 
 ---
 
