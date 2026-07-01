@@ -76,18 +76,32 @@ public class BillingEngine {
         String paymentId = "synub-sub" + sub.getId() + "-" + today
                 + "-r" + sub.getRetryCount() + "-" + UUID.randomUUID().toString().substring(0, 8);
         String orderName = plan.getProduct().getName() + " " + plan.getName() + " 정기결제";
-        int amount = sub.chargeAmount(); // 좌석 수 반영(인원당 과금)
+        int gross = sub.chargeAmount();                     // 좌석 수 반영 총액
+        int credit = sub.getCreditBalance();
+        int amount = Math.max(0, gross - credit);           // 크레딧 차감 후 실제 청구액
+        int leftoverCredit = Math.max(0, credit - gross);   // 사용 후 남는 크레딧
 
-        PaymentGateway.ChargeResult result = gateway.charge(new PaymentGateway.ChargeRequest(
-                sub.getBillingKey().getPgBillingKey(), amount, orderName, paymentId,
-                sub.getCustomer().getExternalId(), sub.getCustomer().getEmail(),
-                "010-0000-0000")); // TODO: 고객 전화번호 수집 후 전달
+        boolean success;
+        String pgPaymentId = null;
+        String failureReason = null;
+        if (amount == 0) {
+            success = true; // 크레딧으로 전액 충당 — 게이트웨이 미호출
+        } else {
+            PaymentGateway.ChargeResult result = gateway.charge(new PaymentGateway.ChargeRequest(
+                    sub.getBillingKey().getPgBillingKey(), amount, orderName, paymentId,
+                    sub.getCustomer().getExternalId(), sub.getCustomer().getEmail(),
+                    "010-0000-0000")); // TODO: 고객 전화번호 수집 후 전달
+            success = result.success();
+            pgPaymentId = result.pgPaymentId();
+            failureReason = result.failureReason();
+        }
 
-        if (result.success()) {
+        if (success) {
             String receiptNo = today.format(DateTimeFormatter.BASIC_ISO_DATE)
                     + "-" + String.format("%06d", sub.getId());
-            payments.save(new Payment(sub, result.pgPaymentId(), amount,
+            payments.save(new Payment(sub, pgPaymentId, amount,
                     "paid", null, receiptNo, Instant.now()));
+            sub.setCreditBalance(leftoverCredit); // 크레딧 소비 후 잔액 반영
 
             LocalDate base = wasPastDue ? today : sub.getNextBillingDate();
             sub.setNextBillingDate("yearly".equals(plan.getBillingCycle())
@@ -103,9 +117,9 @@ public class BillingEngine {
             return Outcome.CHARGED;
         }
 
-        // 실패 처리
+        // 실패 처리 (크레딧은 소비하지 않음)
         payments.save(new Payment(sub, null, amount,
-                "failed", result.failureReason(), null, null));
+                "failed", failureReason, null, null));
         int attempt = sub.getRetryCount() + 1;
         sub.setRetryCount(attempt);
 

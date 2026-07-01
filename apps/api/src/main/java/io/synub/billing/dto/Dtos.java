@@ -34,7 +34,7 @@ public final class Dtos {
             LocalDate startedAt, LocalDate nextBillingDate,
             String card, boolean cancelAtPeriodEnd,
             int monthsActive, UsageDto usage,
-            String pricingType, int unitAmount, int seats) {}
+            String pricingType, int unitAmount, int seats, int creditBalance) {}
 
     // ---- 결제 내역 ----
     public record PaymentDto(

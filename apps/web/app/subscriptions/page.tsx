@@ -13,6 +13,8 @@ import {
   ArrowRight,
   AlertTriangle,
   Loader2,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -160,6 +162,23 @@ export default function SubscriptionsPage() {
                     />
                   </dl>
                 </div>
+
+                {s.pricingType === "per_seat" && !isCanceled && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                    <div className="text-[13px]">
+                      <span className="font-semibold">좌석 {s.seats}석</span>
+                      <span className="ml-1.5 text-muted-foreground">
+                        · {formatKRW(s.unitAmount)} / 인 · 월
+                      </span>
+                      {s.creditBalance > 0 && (
+                        <span className="ml-2 rounded-md bg-success-subtle px-1.5 py-0.5 text-[11px] font-bold text-success-foreground">
+                          크레딧 {formatKRW(s.creditBalance)} · 다음 청구 차감
+                        </span>
+                      )}
+                    </div>
+                    <SeatControl sub={s} onChanged={reload} />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 border-t border-border bg-muted/30 px-5 py-3 sm:px-6">
@@ -264,6 +283,62 @@ function Fact({
         <dt className="text-[11px] text-muted-foreground">{label}</dt>
         <dd className="truncate text-[13px] font-semibold">{value}</dd>
       </div>
+    </div>
+  );
+}
+
+function SeatControl({
+  sub,
+  onChanged,
+}: {
+  sub: ApiSubscription;
+  onChanged: () => void;
+}) {
+  const [seats, setSeats] = React.useState(sub.seats);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const changed = seats !== sub.seats;
+
+  async function apply() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.changeSeats(sub.id, seats);
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "변경에 실패했습니다.");
+      setSeats(sub.seats);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {error && <span className="text-xs font-medium text-destructive">{error}</span>}
+      <div className="flex items-center gap-1 rounded-xl border border-border p-1">
+        <button
+          onClick={() => setSeats((s) => Math.max(1, s - 1))}
+          disabled={busy || seats <= 1}
+          className="flex size-7 items-center justify-center rounded-lg hover:bg-muted disabled:opacity-40"
+          aria-label="좌석 줄이기"
+        >
+          <Minus className="size-3.5" />
+        </button>
+        <span className="w-7 text-center text-sm font-bold tnum">{seats}</span>
+        <button
+          onClick={() => setSeats((s) => Math.min(999, s + 1))}
+          disabled={busy}
+          className="flex size-7 items-center justify-center rounded-lg hover:bg-muted disabled:opacity-40"
+          aria-label="좌석 늘리기"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
+      <Button size="sm" onClick={apply} disabled={!changed || busy}>
+        {busy && <Loader2 className="animate-spin" />}
+        {changed ? `${seats}석 적용` : "좌석 변경"}
+      </Button>
     </div>
   );
 }

@@ -67,6 +67,7 @@ export interface ApiSubscription {
   pricingType: PricingType;
   unitAmount: number;
   seats: number;
+  creditBalance: number;
 }
 
 export interface ApiPayment {

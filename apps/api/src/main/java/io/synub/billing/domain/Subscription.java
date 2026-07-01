@@ -45,6 +45,10 @@ public class Subscription {
     @Column(nullable = false)
     private int seats = 1;
 
+    /** 비례정산 크레딧 잔액(원). 다음 청구에서 차감. 좌석 감소 시 적립. */
+    @Column(name = "credit_balance", nullable = false)
+    private int creditBalance = 0;
+
     /** 소유 스코프: 'customer' | 'organization'. 기본은 생성 고객 개인 소유. */
     @Column(name = "owner_type", nullable = false)
     private String ownerType;
@@ -95,7 +99,9 @@ public class Subscription {
     public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
     public int getSeats() { return seats; }
     public void setSeats(int seats) { this.seats = Math.max(1, seats); }
-    /** 좌석 수 반영 실제 청구액. */
+    public int getCreditBalance() { return creditBalance; }
+    public void setCreditBalance(int creditBalance) { this.creditBalance = Math.max(0, creditBalance); }
+    /** 좌석 수 반영 실제 청구액(크레딧 차감 전 총액). */
     public int chargeAmount() { return plan.amountForSeats(seats); }
     public String getOwnerType() { return ownerType; }
     public Long getOwnerId() { return ownerId; }

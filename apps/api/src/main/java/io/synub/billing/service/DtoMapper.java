@@ -58,7 +58,8 @@ public class DtoMapper {
                 s.getId(), product.getServiceCode(), product.getName(), plan.getName(),
                 s.chargeAmount(), plan.getBillingCycle(), s.getStatus(),
                 started, s.getNextBillingDate(), card, s.isCancelAtPeriodEnd(),
-                months, usage, plan.getPricingType(), plan.getAmount(), s.getSeats());
+                months, usage, plan.getPricingType(), plan.getAmount(), s.getSeats(),
+                s.getCreditBalance());
     }
 
     public PaymentDto toPayment(Payment pay) {

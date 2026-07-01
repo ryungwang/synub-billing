@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -124,14 +125,57 @@ public class SubscriptionService {
         return mapper.toSubscription(sub);
     }
 
-    /** 좌석 수 변경(인원당 과금). 다음 청구부터 반영. 소유 스코프 쓰기 권한 필요. */
+    /**
+     * 좌석 수 변경(인원당 과금) + 비례 정산. 소유 스코프 쓰기 권한 필요.
+     * 증가 → 남은 기간 비례분 즉시 청구. 감소 → 비례분을 크레딧으로 적립(다음 청구 차감).
+     */
     @Transactional
-    public SubscriptionDto changeSeats(Long id, int seats) {
+    public SubscriptionDto changeSeats(Long id, int newSeats) {
         Subscription sub = findOwned(id);
-        if (!sub.getPlan().isPerSeat()) {
+        Plan plan = sub.getPlan();
+        if (!plan.isPerSeat()) {
             throw new BadRequestException("인원당 과금 구독이 아닙니다.");
         }
-        sub.setSeats(Math.max(1, seats));
+        newSeats = Math.max(1, newSeats);
+        int oldSeats = sub.getSeats();
+        if (newSeats == oldSeats) {
+            return mapper.toSubscription(sub);
+        }
+
+        // 남은 기간 비율(오늘~다음청구일 / 현재 청구주기 길이)
+        LocalDate today = LocalDate.now(DtoMapper.KST);
+        LocalDate next = sub.getNextBillingDate();
+        LocalDate cycleStart = "yearly".equals(plan.getBillingCycle())
+                ? next.minusYears(1) : next.minusMonths(1);
+        long cycleDays = Math.max(1, ChronoUnit.DAYS.between(cycleStart, next));
+        long remainingDays = Math.max(0, ChronoUnit.DAYS.between(today, next));
+        double fraction = Math.min(1.0, (double) remainingDays / cycleDays);
+
+        int seatDelta = newSeats - oldSeats;
+        long prorated = Math.round((long) plan.getAmount() * Math.abs(seatDelta) * fraction);
+
+        if (seatDelta > 0 && prorated > 0) {
+            // 좌석 추가 — 남은 기간 비례분 즉시 청구
+            Customer me = currentUser.resolve();
+            String paymentId = "synub-seat" + sub.getId() + "-" + today
+                    + "-" + UUID.randomUUID().toString().substring(0, 8);
+            String orderName = plan.getProduct().getName() + " 좌석 추가 " + seatDelta + "석(잔여기간 정산)";
+            PaymentGateway.ChargeResult charge = gateway.charge(new PaymentGateway.ChargeRequest(
+                    sub.getBillingKey().getPgBillingKey(), (int) prorated, orderName, paymentId,
+                    me.getExternalId(), me.getEmail(), "010-0000-0000"));
+            if (!charge.success()) {
+                throw new BadRequestException("좌석 추가 결제에 실패했습니다: " + charge.failureReason());
+            }
+            String receiptNo = today.format(DateTimeFormatter.BASIC_ISO_DATE)
+                    + "-S" + String.format("%04d", sub.getId());
+            payments.save(new Payment(sub, charge.pgPaymentId(), (int) prorated,
+                    "paid", null, receiptNo, Instant.now()));
+        } else if (seatDelta < 0 && prorated > 0) {
+            // 좌석 감소 — 남은 기간 비례분을 크레딧으로 적립(다음 청구에서 차감)
+            sub.setCreditBalance(sub.getCreditBalance() + (int) prorated);
+        }
+
+        sub.setSeats(newSeats);
         return mapper.toSubscription(sub);
     }
 
