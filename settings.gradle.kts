@@ -8,4 +8,3 @@ dependencyResolutionManagement {
 }
 
 include("apps:api")
-include("apps:sso")
