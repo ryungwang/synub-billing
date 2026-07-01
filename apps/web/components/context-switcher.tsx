@@ -10,6 +10,8 @@ import {
   Plus,
   Loader2,
   AlertCircle,
+  Mail,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { api, type ApiOrg } from "@/lib/api";
+import { api, type ApiOrg, type ApiInvitation } from "@/lib/api";
 import {
   rawContext,
   setContext,
@@ -37,12 +39,21 @@ const ROLE_LABEL: Record<string, string> = {
 export function ContextSwitcher() {
   const ctx = useSyncExternalStore(subscribeContext, rawContext, () => "personal");
   const [orgs, setOrgs] = React.useState<ApiOrg[]>([]);
+  const [invites, setInvites] = React.useState<ApiInvitation[]>([]);
   const [open, setOpen] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
 
   React.useEffect(() => {
     api.organizations().then(setOrgs).catch(() => setOrgs([]));
+    api.myInvitations().then(setInvites).catch(() => setInvites([]));
   }, []);
+
+  function acceptInvite(id: number) {
+    api.acceptInvitation(id).then(() => window.location.reload());
+  }
+  function declineInvite(id: number) {
+    api.declineInvitation(id).then(() => setInvites((v) => v.filter((i) => i.id !== id)));
+  }
 
   const orgId = contextOrgId(ctx);
   const currentOrg = orgId ? orgs.find((o) => o.id === orgId) : null;
@@ -68,6 +79,11 @@ export function ContextSwitcher() {
           {isPersonal ? "개인" : currentOrg?.name ?? "회사"}
         </span>
         <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+        {invites.length > 0 && (
+          <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            {invites.length}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -96,6 +112,44 @@ export function ContextSwitcher() {
                 onClick={() => choose(`org:${o.id}`)}
               />
             ))}
+
+            {invites.length > 0 && (
+              <>
+                <div className="my-1 h-px bg-border" />
+                <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  받은 초대
+                </div>
+                {invites.map((inv) => (
+                  <div key={inv.id} className="flex items-center gap-2 rounded-xl px-2.5 py-2">
+                    <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <Mail className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold">
+                        {inv.organizationName ?? "회사"}
+                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {ROLE_LABEL[inv.role] ?? inv.role} 초대
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => acceptInvite(inv.id)}
+                      className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                      aria-label="수락"
+                    >
+                      <Check className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => declineInvite(inv.id)}
+                      className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                      aria-label="거절"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
 
             <div className="my-1 h-px bg-border" />
             <button

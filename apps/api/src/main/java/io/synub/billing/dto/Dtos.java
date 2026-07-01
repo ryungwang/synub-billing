@@ -1,5 +1,6 @@
 package io.synub.billing.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -71,4 +72,15 @@ public final class Dtos {
     public record OrgDto(Long id, String name, String role) {}
 
     public record CreateOrgRequest(@NotBlank String name) {}
+
+    /** 조직 멤버. */
+    public record MemberDto(Long customerId, String externalId, String email, String role) {}
+
+    /** 초대. organizationName 은 내가 받은 초대 조회 시 채워짐. */
+    public record InvitationDto(Long id, Long organizationId, String organizationName,
+                                String email, String role, String status) {}
+
+    public record CreateInvitationRequest(@NotBlank @Email String email, @NotBlank String role) {}
+
+    public record ChangeRoleRequest(@NotBlank String role) {}
 }

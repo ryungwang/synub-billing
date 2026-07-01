@@ -9,6 +9,7 @@ import {
   Repeat,
   CreditCard,
   ReceiptText,
+  Users,
   Menu,
   X,
   LifeBuoy,
@@ -37,6 +38,7 @@ const NAV: NavGroup[] = [
       { href: "/subscriptions", label: "구독 관리", icon: Repeat },
       { href: "/payment-methods", label: "결제수단", icon: CreditCard },
       { href: "/payments", label: "결제 내역", icon: ReceiptText },
+      { href: "/team", label: "멤버", icon: Users },
     ],
   },
 ];

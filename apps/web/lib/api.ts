@@ -126,10 +126,28 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export type OrgRole = "owner" | "billing_manager" | "member";
+
 export interface ApiOrg {
   id: number;
   name: string;
-  role: "owner" | "billing_manager" | "member";
+  role: OrgRole;
+}
+
+export interface ApiMember {
+  customerId: number;
+  externalId: string;
+  email: string;
+  role: OrgRole;
+}
+
+export interface ApiInvitation {
+  id: number;
+  organizationId: number;
+  organizationName: string | null;
+  email: string;
+  role: OrgRole;
+  status: string;
 }
 
 export const api = {
@@ -141,6 +159,34 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ name }),
     }),
+
+  // 조직 멤버
+  members: (orgId: number) => http<ApiMember[]>(`/organizations/${orgId}/members`),
+  changeMemberRole: (orgId: number, customerId: number, role: OrgRole) =>
+    http<void>(`/organizations/${orgId}/members/${customerId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+  removeMember: (orgId: number, customerId: number) =>
+    http<void>(`/organizations/${orgId}/members/${customerId}`, { method: "DELETE" }),
+
+  // 초대 (조직 관리자)
+  orgInvitations: (orgId: number) =>
+    http<ApiInvitation[]>(`/organizations/${orgId}/invitations`),
+  invite: (orgId: number, email: string, role: OrgRole) =>
+    http<ApiInvitation>(`/organizations/${orgId}/invitations`, {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    }),
+  cancelInvitation: (orgId: number, invitationId: number) =>
+    http<void>(`/organizations/${orgId}/invitations/${invitationId}`, { method: "DELETE" }),
+
+  // 초대 (받는 사람)
+  myInvitations: () => http<ApiInvitation[]>("/invitations"),
+  acceptInvitation: (id: number) =>
+    http<void>(`/invitations/${id}/accept`, { method: "POST" }),
+  declineInvitation: (id: number) =>
+    http<void>(`/invitations/${id}/decline`, { method: "POST" }),
   subscriptions: () => http<ApiSubscription[]>("/subscriptions"),
   payments: () => http<ApiPayment[]>("/payments"),
   cards: () => http<ApiCard[]>("/billing/keys"),

@@ -3,10 +3,14 @@ package io.synub.billing.service;
 import io.synub.billing.domain.Customer;
 import io.synub.billing.domain.Membership;
 import io.synub.billing.domain.Organization;
+import io.synub.billing.dto.Dtos.MemberDto;
 import io.synub.billing.dto.Dtos.OrgDto;
+import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.tenant.CurrentTenant;
+import io.synub.billing.web.ApiExceptions.BadRequestException;
+import io.synub.billing.web.ApiExceptions.ForbiddenException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,19 +18,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-/** 조직 생성·조회 + 멤버십 확인. 조직/역할은 빌링이 주관(결제 권한과 직결). */
+/** 조직 생성·조회 + 멤버십·역할 관리. 조직/역할은 빌링이 주관(결제 권한과 직결). */
 @Service
 public class OrganizationService {
 
     private final OrganizationRepository organizations;
     private final MembershipRepository memberships;
+    private final CustomerRepository customers;
     private final CurrentUser currentUser;
     private final CurrentTenant tenant;
 
     public OrganizationService(OrganizationRepository organizations, MembershipRepository memberships,
-                               CurrentUser currentUser, CurrentTenant tenant) {
+                               CustomerRepository customers, CurrentUser currentUser, CurrentTenant tenant) {
         this.organizations = organizations;
         this.memberships = memberships;
+        this.customers = customers;
         this.currentUser = currentUser;
         this.tenant = tenant;
     }
@@ -45,11 +51,8 @@ public class OrganizationService {
     public List<OrgDto> myOrganizations() {
         Customer me = currentUser.resolve();
         return memberships.findByCustomerId(me.getId()).stream()
-                .map(m -> {
-                    Organization o = organizations.findById(m.getOrganizationId())
-                            .orElseThrow(() -> new NotFoundException("조직을 찾을 수 없습니다."));
-                    return new OrgDto(o.getId(), o.getName(), m.getRole());
-                })
+                .map(m -> new OrgDto(org(m.getOrganizationId()).getId(),
+                        org(m.getOrganizationId()).getName(), m.getRole()))
                 .toList();
     }
 
@@ -57,5 +60,94 @@ public class OrganizationService {
     @Transactional(readOnly = true)
     public Optional<Membership> membership(Long organizationId, Long customerId) {
         return memberships.findByOrganizationIdAndCustomerId(organizationId, customerId);
+    }
+
+    /** 조직 멤버 목록. 멤버만 조회 가능. */
+    @Transactional(readOnly = true)
+    public List<MemberDto> members(Long organizationId) {
+        requireMember(organizationId);
+        return memberships.findByOrganizationId(organizationId).stream()
+                .map(m -> {
+                    Customer c = customers.findById(m.getCustomerId())
+                            .orElseThrow(() -> new NotFoundException("고객을 찾을 수 없습니다."));
+                    return new MemberDto(c.getId(), c.getExternalId(), c.getEmail(), m.getRole());
+                })
+                .toList();
+    }
+
+    /** 멤버 역할 변경(owner 만). 마지막 owner 를 강등할 수 없다. */
+    @Transactional
+    public void changeRole(Long organizationId, Long customerId, String role) {
+        requireOwner(organizationId);
+        validateAssignableRole(role);
+        Membership target = memberships.findByOrganizationIdAndCustomerId(organizationId, customerId)
+                .orElseThrow(() -> new NotFoundException("멤버를 찾을 수 없습니다."));
+        if (Membership.OWNER.equals(target.getRole()) && !Membership.OWNER.equals(role)
+                && ownerCount(organizationId) <= 1) {
+            throw new BadRequestException("마지막 소유자의 역할은 변경할 수 없습니다.");
+        }
+        target.setRole(role);
+    }
+
+    /** 멤버 제거(owner 만). 마지막 owner 는 제거할 수 없다. */
+    @Transactional
+    public void removeMember(Long organizationId, Long customerId) {
+        requireOwner(organizationId);
+        Membership target = memberships.findByOrganizationIdAndCustomerId(organizationId, customerId)
+                .orElseThrow(() -> new NotFoundException("멤버를 찾을 수 없습니다."));
+        if (Membership.OWNER.equals(target.getRole()) && ownerCount(organizationId) <= 1) {
+            throw new BadRequestException("마지막 소유자는 제거할 수 없습니다.");
+        }
+        memberships.delete(target);
+    }
+
+    // ---- 역할 검증 헬퍼 (다른 서비스에서도 사용) ----
+
+    public Membership requireMember(Long organizationId) {
+        Customer me = currentUser.resolve();
+        return memberships.findByOrganizationIdAndCustomerId(organizationId, me.getId())
+                .orElseThrow(() -> new ForbiddenException("해당 조직의 멤버가 아닙니다."));
+    }
+
+    public Membership requireManager(Long organizationId) {
+        Membership m = requireMember(organizationId);
+        if (!m.canManageBilling()) {
+            throw new ForbiddenException("조직의 소유자·결제 관리자만 할 수 있습니다.");
+        }
+        return m;
+    }
+
+    public Membership requireOwner(Long organizationId) {
+        Membership m = requireMember(organizationId);
+        if (!Membership.OWNER.equals(m.getRole())) {
+            throw new ForbiddenException("조직의 소유자만 할 수 있습니다.");
+        }
+        return m;
+    }
+
+    /** 초대 수락 시 멤버십 생성(이미 있으면 무시). */
+    @Transactional
+    public void addMember(Long organizationId, Long customerId, String role) {
+        if (memberships.findByOrganizationIdAndCustomerId(organizationId, customerId).isEmpty()) {
+            memberships.save(new Membership(organizationId, customerId, role));
+        }
+    }
+
+    public Organization org(Long id) {
+        return organizations.findById(id)
+                .orElseThrow(() -> new NotFoundException("조직을 찾을 수 없습니다."));
+    }
+
+    /** 초대·역할에 지정 가능한 역할(owner 는 초대·지정 대상 아님 — 생성자만 owner). */
+    public void validateAssignableRole(String role) {
+        if (!Membership.MEMBER.equals(role) && !Membership.BILLING_MANAGER.equals(role)
+                && !Membership.OWNER.equals(role)) {
+            throw new BadRequestException("알 수 없는 역할입니다: " + role);
+        }
+    }
+
+    private long ownerCount(Long organizationId) {
+        return memberships.findByOrganizationId(organizationId).stream()
+                .filter(m -> Membership.OWNER.equals(m.getRole())).count();
     }
 }
