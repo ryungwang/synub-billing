@@ -1,0 +1,59 @@
+# prod 프로필 — 시크릿은 디폴트 금지(${ENV}), 공유 db의 앱 전용 DB+스키마.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      connection-init-sql: SET search_path TO billing
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: billing
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    schemas: billing
+    default-schema: billing
+    create-schemas: true
+
+server:
+  port: 8080
+
+app:
+  tenant:
+    default-company-id: ${DEFAULT_COMPANY_ID:1}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  billing:
+    retry-days: [1, 3, 5]
+  webhook:
+    secret: ${WEBHOOK_SECRET}
+    timeout-ms: 3000
+    max-attempts: 5
+  portone:
+    enabled: ${PORTONE_ENABLED:true}
+    api-base: "https://api.portone.io"
+    store-id: ${PORTONE_STORE_ID}
+    channel-key: ${PORTONE_CHANNEL_KEY}
+    api-secret: ${PORTONE_API_SECRET}
+  sso:
+    # 운영: SSO 공개키(JWKS) 서명검증. 시크릿 디폴트 금지, dev-fallback 반드시 off(토큰 필수).
+    mode: ${SSO_MODE:jwks}
+    jwt-secret: ${SSO_JWT_SECRET:}
+    jwks-uri: ${SSO_JWKS_URI}
+    issuer: ${SSO_ISSUER}
+    audience: ${SSO_AUDIENCE:synub-billing}
+    clock-skew-seconds: ${SSO_CLOCK_SKEW:60}
+    dev-fallback-enabled: ${SSO_DEV_FALLBACK:false}
+    dev-external-id: ""
+    dev-email: ""
+
+billing:
+  scheduler:
+    cron: ${BILLING_CRON:0 0 3 * * *}
+    zone: "Asia/Seoul"

@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Pretendard — 국내 핀테크 표준 한글 폰트 (dynamic subset) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Synub Billing — "신뢰 핀테크 (Toss 톤)" 디자인 토큰
+  - 밝고 친근, 또렷한 파랑 단일 액센트, 넉넉한 둥근 모서리
+  - 라이트/다크 양쪽 WCAG AA 대비 충족
+  - 모든 컴포넌트는 색상 하드코딩 없이 이 토큰만 사용
+*/
+:root {
+  --radius: 1rem;
+
+  /* 표면 — 공식 시스템: 배경 #F9FAFB, 카드 흰색 */
+  --background: #f9fafb;
+  --foreground: #191f28; /* gray-900 */
+  --card: #ffffff;
+  --card-foreground: #191f28;
+  --popover: #ffffff;
+  --popover-foreground: #191f28;
+
+  /* 파랑 — 유일한 브랜드 액센트 (Synub blue) */
+  --primary: #3182f6; /* blue */
+  --primary-hover: #2272eb; /* blue-press */
+  --primary-foreground: #ffffff;
+  --primary-subtle: #ebf3fe; /* blue-weak */
+  --primary-subtle-foreground: #2272eb;
+
+  /* 보조 표면 (그레이 스케일) */
+  --secondary: #f2f4f6; /* gray-100 */
+  --secondary-foreground: #333d4b; /* gray-700 */
+  --muted: #f2f4f6; /* gray-100 */
+  --muted-foreground: #6b7684; /* gray-500 */
+  --accent: #ebf3fe; /* blue-weak */
+  --accent-foreground: #2272eb;
+
+  /* 상태 색 (기능색 — 상태 표시 전용) */
+  --success: #15b86b;
+  --success-foreground: #0a7d4f;
+  --success-subtle: #e7f7ee;
+  --warning: #ff9500;
+  --warning-foreground: #b35f00;
+  --warning-subtle: #fff3e0;
+  --destructive: #f04452;
+  --destructive-foreground: #ffffff;
+  --destructive-subtle: #ffe9eb;
+  --destructive-subtle-foreground: #d32f3c;
+
+  /* 경계·입력·포커스 */
+  --border: #e5e8eb;
+  --input: #e5e8eb;
+  --ring: #3182f6;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4e5968; /* gray-600 */
+  --sidebar-muted: #8b95a1; /* gray-400 */
+  --sidebar-active: #ebf3fe; /* blue-weak */
+  --sidebar-active-foreground: #2272eb;
+  --sidebar-border: #f2f4f6; /* gray-100 */
+}
+
+.dark {
+  --background: #16181d;
+  --foreground: #edeff2;
+  --card: #1e2128;
+  --card-foreground: #edeff2;
+  --popover: #21242c;
+  --popover-foreground: #edeff2;
+
+  --primary: #4a90ff;
+  --primary-hover: #5d9dff;
+  --primary-foreground: #0b1220;
+  --primary-subtle: #1a2c4a;
+  --primary-subtle-foreground: #9cc2ff;
+
+  --secondary: #282c34;
+  --secondary-foreground: #cdd3db;
+  --muted: #23262d;
+  --muted-foreground: #98a2b0;
+  --accent: #20304d;
+  --accent-foreground: #9cc2ff;
+
+  --success: #2ad19b;
+  --success-foreground: #6fe3c0;
+  --success-subtle: #14352b;
+  --warning: #ffb02e;
+  --warning-foreground: #ffd28a;
+  --warning-subtle: #2c2410;
+  --destructive: #ff5d6a;
+  --destructive-foreground: #1a0d0f;
+  --destructive-subtle: #3a1c20;
+  --destructive-subtle-foreground: #ff9aa3;
+
+  --border: #2c303a;
+  --input: #2c303a;
+  --ring: #4a90ff;
+
+  --sidebar: #1a1d23;
+  --sidebar-foreground: #b6bdc8;
+  --sidebar-muted: #7b8694;
+  --sidebar-active: #20304d;
+  --sidebar-active-foreground: #9cc2ff;
+  --sidebar-border: #262a32;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  --font-sans: "Pretendard Variable", Pretendard, ui-sans-serif, system-ui,
+    -apple-system, "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 6px 20px -8px rgba(15, 23, 42, 0.08);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.06),
+    0 18px 40px -12px rgba(15, 23, 42, 0.16);
+  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.2);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "tnum" 0;
+}
+
+/* 금액·숫자는 tabular-nums 로 자리수 정렬 */
+.tnum {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+/* 부드러운 스크롤바 (라이트/다크 토큰 대응) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+  background-clip: padding-box;
+}

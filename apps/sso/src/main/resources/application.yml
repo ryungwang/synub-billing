@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: synub-sso
+  datasource:
+    # 공용 로컬 Postgres(5432) — synub 프로젝트 DB들이 모여있는 기존 인스턴스. 별도 컨테이너 안 씀.
+    url: jdbc:postgresql://localhost:5432/synub_sso
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:deer}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: sso
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+  flyway:
+    enabled: true
+    schemas: sso
+    default-schema: sso
+    create-schemas: true
+
+server:
+  port: 8090
+
+sso:
+  jwt:
+    # 발급 토큰의 iss/aud. 빌링(및 타 서비스)의 검증 설정과 일치해야 한다.
+    issuer: "https://accounts.synub.io"
+    audiences: ["synub-billing", "synub-office", "synub-postflow"]
+    ttl-seconds: 3600
+    # RSA 서명키. 로컬은 미설정 → 부팅 시 임시 키 생성(재기동 시 바뀜). 운영은 env로 PKCS8 base64 주입.
+    private-key: ${SSO_SIGNING_KEY:}
+    key-id: ${SSO_SIGNING_KID:synub-sso-dev}
+  demo:
+    # 데모 체험 계정 — external_id 를 빌링 시드 고객(demo-user)에 맞춤. 운영은 반드시 false.
+    enabled: ${SSO_DEMO_ENABLED:true}
+    email: "demo@synub.io"
+    password: "demo1234"
+    external-id: "demo-user"
+    name: "김신업"

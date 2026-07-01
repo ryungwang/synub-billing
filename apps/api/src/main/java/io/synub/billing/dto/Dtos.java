@@ -1,0 +1,74 @@
+package io.synub.billing.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.List;
+
+/** API 입출력 DTO 모음 (프론트 계약과 동일한 JSON 형태). */
+public final class Dtos {
+    private Dtos() {}
+
+    // ---- 카탈로그 ----
+    public record PlanDto(
+            Long id, String code, String name, String tagline,
+            int amount, String cycle, List<String> features, boolean highlight) {}
+
+    public record ProductDto(
+            String serviceCode, String name, String category, String description,
+            String domain, long subscribers, List<PlanDto> plans) {}
+
+    // ---- 결제수단 ----
+    public record CardDto(
+            Long id, String company, String last4, String type,
+            boolean isPrimary, long billedCount) {}
+
+    // ---- 구독 ----
+    public record UsageDto(String label, String unit, int used, Integer limit) {}
+
+    public record SubscriptionDto(
+            Long id, String serviceCode, String product, String plan,
+            int amount, String cycle, String status,
+            LocalDate startedAt, LocalDate nextBillingDate,
+            String card, boolean cancelAtPeriodEnd,
+            int monthsActive, UsageDto usage) {}
+
+    // ---- 결제 내역 ----
+    public record PaymentDto(
+            Long id, String serviceCode, String product, String plan,
+            int amount, String status, String date,
+            String method, String receiptNo) {}
+
+    // ---- 제품용 entitlement ----
+    public record EntitlementDto(
+            boolean active, String plan, LocalDate expiresAt, List<String> features) {}
+
+    // ---- 대시보드 ----
+    public record SpendPointDto(String month, long amount) {}
+
+    public record SummaryDto(
+            int activeCount, long monthlyTotal, long savedByYearly,
+            long paidThisYear, LocalDate nextBillingDate, String nextBillingProduct) {}
+
+    public record DashboardDto(
+            SummaryDto summary,
+            List<SubscriptionDto> activeSubscriptions,
+            List<PaymentDto> recentPayments,
+            List<SpendPointDto> spendHistory) {}
+
+    // ---- 요청 바디 ----
+    public record RegisterBillingKeyRequest(
+            @NotNull String pgBillingKey, String cardCompany,
+            String cardLast4, String cardType, Boolean primary) {}
+
+    public record CreateSubscriptionRequest(
+            @NotNull Long planId, @NotNull Long billingKeyId) {}
+
+    public record ChangePlanRequest(@NotNull Long planId) {}
+
+    // ---- 조직/역할 ----
+    /** 내가 속한 조직 + 내 역할. */
+    public record OrgDto(Long id, String name, String role) {}
+
+    public record CreateOrgRequest(@NotBlank String name) {}
+}

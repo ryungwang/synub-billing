@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+*.log
+.DS_Store
+.env*.local
+.turbo/
+next-env.d.ts
+.gradle/
+.idea/
+.kotlin/
+*.iml
+bin/
