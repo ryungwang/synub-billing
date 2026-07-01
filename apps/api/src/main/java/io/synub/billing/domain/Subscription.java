@@ -41,6 +41,13 @@ public class Subscription {
     @Column(name = "retry_count", nullable = false)
     private int retryCount;
 
+    /** 소유 스코프: 'customer' | 'organization'. 기본은 생성 고객 개인 소유. */
+    @Column(name = "owner_type", nullable = false)
+    private String ownerType;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -55,6 +62,14 @@ public class Subscription {
         this.startedAt = startedAt;
         this.nextBillingDate = nextBillingDate;
         this.cancelAtPeriodEnd = true;
+        // 기본 소유 = 생성 고객(개인). 조직 소유면 서비스에서 setOwner 로 덮어쓴다.
+        this.ownerType = "customer";
+        this.ownerId = customer.getId();
+    }
+
+    public void setOwner(String ownerType, Long ownerId) {
+        this.ownerType = ownerType;
+        this.ownerId = ownerId;
     }
 
     public Long getId() { return id; }
@@ -74,5 +89,7 @@ public class Subscription {
     public void setCancelAtPeriodEnd(boolean v) { this.cancelAtPeriodEnd = v; }
     public int getRetryCount() { return retryCount; }
     public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
+    public String getOwnerType() { return ownerType; }
+    public Long getOwnerId() { return ownerId; }
     public Instant getCreatedAt() { return createdAt; }
 }

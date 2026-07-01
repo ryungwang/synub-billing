@@ -35,14 +35,12 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardDto get() {
-        // 조직 컨텍스트: 멤버십 검증 + 개인 데이터 누출 방지(조직 소유 구독은 다음 마일스톤 → 빈 대시보드)
-        if (scope.enforceOrgContext() != null) {
-            SummaryDto empty = new SummaryDto(0, 0, 0, 0, null, null);
-            return new DashboardDto(empty, List.of(), List.of(), spendHistory(List.of()));
-        }
-        Customer me = currentUser.resolve();
-        List<Subscription> subs = subscriptions.findByCustomerIdOrderByCreatedAtAsc(me.getId());
-        List<Payment> pays = payments.findByCustomerOrderByEffectiveDateDesc(me.getId());
+        // 현재 소유 스코프(개인/조직)로 조회. 조직이면 멤버십 검증됨.
+        Owner owner = scope.readOwner();
+        List<Subscription> subs =
+                subscriptions.findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(owner.type(), owner.id());
+        List<Payment> pays =
+                payments.findByOwnerOrderByEffectiveDateDesc(owner.type(), owner.id());
 
         List<SubscriptionDto> active = subs.stream()
                 .filter(s -> "active".equals(s.getStatus()) || "past_due".equals(s.getStatus()))

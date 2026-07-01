@@ -33,9 +33,8 @@ public class BillingKeyService {
 
     @Transactional(readOnly = true)
     public List<CardDto> list() {
-        if (scope.enforceOrgContext() != null) return List.of();
-        Customer me = currentUser.resolve();
-        return keys.findByCustomerIdAndStatusOrderByCreatedAtAsc(me.getId(), "active")
+        Owner owner = scope.readOwner();
+        return keys.findByOwnerTypeAndOwnerIdAndStatusOrderByCreatedAtAsc(owner.type(), owner.id(), "active")
                 .stream()
                 .map(k -> mapper.toCard(
                         k, subscriptions.countByBillingKeyIdAndStatusNot(k.getId(), "canceled")))
@@ -45,29 +44,33 @@ public class BillingKeyService {
     @Transactional
     public CardDto register(RegisterBillingKeyRequest req) {
         Customer me = currentUser.resolve();
-        List<BillingKey> existing = keys.findByCustomerIdAndStatusOrderByCreatedAtAsc(me.getId(), "active");
+        Owner owner = scope.writeOwner();
+        List<BillingKey> existing = keys.findByOwnerTypeAndOwnerIdAndStatusOrderByCreatedAtAsc(
+                owner.type(), owner.id(), "active");
         boolean makePrimary = Boolean.TRUE.equals(req.primary()) || existing.isEmpty();
         if (makePrimary) {
             existing.forEach(k -> k.setPrimary(false));
         }
         BillingKey key = new BillingKey(me, req.pgBillingKey(), req.cardCompany(),
                 req.cardLast4(), req.cardType(), makePrimary);
+        key.setOwner(owner.type(), owner.id());
         keys.save(key);
         return mapper.toCard(key, 0);
     }
 
     @Transactional
     public void setPrimary(Long id) {
-        Customer me = currentUser.resolve();
-        BillingKey target = keys.findByIdAndCustomerId(id, me.getId())
+        Owner owner = scope.writeOwner();
+        BillingKey target = keys.findByIdAndOwnerTypeAndOwnerId(id, owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));
-        keys.findByCustomerId(me.getId()).forEach(k -> k.setPrimary(k.getId().equals(target.getId())));
+        keys.findByOwnerTypeAndOwnerIdAndStatusOrderByCreatedAtAsc(owner.type(), owner.id(), "active")
+                .forEach(k -> k.setPrimary(k.getId().equals(target.getId())));
     }
 
     @Transactional
     public void delete(Long id) {
-        Customer me = currentUser.resolve();
-        BillingKey key = keys.findByIdAndCustomerId(id, me.getId())
+        Owner owner = scope.writeOwner();
+        BillingKey key = keys.findByIdAndOwnerTypeAndOwnerId(id, owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));
         if (key.isPrimary()) {
             throw new BadRequestException("대표 결제수단은 삭제할 수 없습니다. 다른 카드를 대표로 지정하세요.");

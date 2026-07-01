@@ -19,4 +19,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         order by coalesce(p.paidAt, p.createdAt) desc
         """)
     List<Payment> findByCustomerOrderByEffectiveDateDesc(@Param("customerId") Long customerId);
+
+    /** 소유 스코프(개인/조직) 구독의 결제 이력. */
+    @Query("""
+        select p from Payment p
+        where p.subscription.ownerType = :ownerType and p.subscription.ownerId = :ownerId
+        order by coalesce(p.paidAt, p.createdAt) desc
+        """)
+    List<Payment> findByOwnerOrderByEffectiveDateDesc(
+            @Param("ownerType") String ownerType, @Param("ownerId") Long ownerId);
 }

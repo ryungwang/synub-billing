@@ -26,9 +26,8 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public List<PaymentDto> list() {
-        if (scope.enforceOrgContext() != null) return List.of();
-        Customer me = currentUser.resolve();
-        return payments.findByCustomerOrderByEffectiveDateDesc(me.getId())
+        Owner owner = scope.readOwner();
+        return payments.findByOwnerOrderByEffectiveDateDesc(owner.type(), owner.id())
                 .stream().map(mapper::toPayment).toList();
     }
 }

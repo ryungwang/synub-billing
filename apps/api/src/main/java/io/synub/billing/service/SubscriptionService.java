@@ -49,20 +49,20 @@ public class SubscriptionService {
 
     @Transactional(readOnly = true)
     public List<SubscriptionDto> list() {
-        // 조직 컨텍스트: 멤버십 검증 후 빈 목록(조직 소유 구독은 다음 마일스톤)
-        if (scope.enforceOrgContext() != null) return List.of();
-        Customer me = currentUser.resolve();
-        return subscriptions.findByCustomerIdOrderByCreatedAtAsc(me.getId())
+        Owner owner = scope.readOwner();
+        return subscriptions.findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(owner.type(), owner.id())
                 .stream().map(mapper::toSubscription).toList();
     }
 
-    /** 구독 생성 + 첫 결제 (PRD §7.2). */
+    /** 구독 생성 + 첫 결제 (PRD §7.2). 조직 컨텍스트면 결제 관리 권한 필요. */
     @Transactional
     public SubscriptionDto create(CreateSubscriptionRequest req) {
         Customer me = currentUser.resolve();
+        Owner owner = scope.writeOwner();
         Plan plan = plans.findByIdAndProductCompanyId(req.planId(), tenant.companyId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
-        BillingKey key = keys.findByIdAndCustomerId(req.billingKeyId(), me.getId())
+        // 카드는 같은 소유 스코프의 것이어야 한다(개인 카드로 회사 구독 불가, 그 반대도).
+        BillingKey key = keys.findByIdAndOwnerTypeAndOwnerId(req.billingKeyId(), owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));
 
         String paymentId = "synub-" + UUID.randomUUID();
@@ -81,6 +81,7 @@ public class SubscriptionService {
                 ? today.plusYears(1) : today.plusMonths(1);
 
         Subscription sub = new Subscription(me, plan, key, "active", now, next);
+        sub.setOwner(owner.type(), owner.id());
         sub.setCancelAtPeriodEnd(false);
         subscriptions.save(sub);
 
@@ -119,8 +120,9 @@ public class SubscriptionService {
     }
 
     private Subscription findOwned(Long id) {
-        Customer me = currentUser.resolve();
-        return subscriptions.findByIdAndCustomerId(id, me.getId())
+        // 변경(해지·플랜변경)은 쓰기 → 조직이면 결제 관리 권한 필요.
+        Owner owner = scope.writeOwner();
+        return subscriptions.findByIdAndOwnerTypeAndOwnerId(id, owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("구독을 찾을 수 없습니다."));
     }
 }

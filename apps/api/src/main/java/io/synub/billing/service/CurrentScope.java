@@ -2,15 +2,14 @@ package io.synub.billing.service;
 
 import io.synub.billing.auth.AuthContext;
 import io.synub.billing.domain.Customer;
+import io.synub.billing.domain.Membership;
 import io.synub.billing.web.ApiExceptions.ForbiddenException;
 import org.springframework.stereotype.Component;
 
 /**
- * 현재 요청의 데이터 스코프 결정 + 접근 통제.
- * 개인 컨텍스트 → 본인(customer) 스코프. 조직 컨텍스트 → 멤버십 검증(미소속이면 403).
- *
- * <p>주의(데이터 격리): 조직 소유 구독/카드는 아직 미구현(다음 마일스톤)이라, 조직 컨텍스트의 조회는
- * 본인 개인 데이터를 노출하지 않고 <b>빈 결과</b>를 반환해야 한다. {@link #isOrgContext()}로 판별한다.
+ * 현재 요청의 소유 스코프({@link Owner}) 결정 + 접근 통제.
+ * 개인 컨텍스트 → 본인(customer) 소유. 조직 컨텍스트 → 멤버십 검증(미소속 403).
+ * 쓰기(카드 등록·구독 생성/변경)는 조직의 결제 관리 권한(owner/billing_manager)을 추가로 요구한다.
  */
 @Component
 public class CurrentScope {
@@ -23,21 +22,26 @@ public class CurrentScope {
         this.organizations = organizations;
     }
 
-    /** 조직 컨텍스트인가. */
-    public boolean isOrgContext() {
-        return currentUser.context().isOrg();
-    }
-
-    /**
-     * 조직 컨텍스트면 멤버십을 검증하고 orgId 반환(미소속이면 403), 개인 컨텍스트면 null.
-     * 조회 서비스는 반환값이 non-null 이면 개인 데이터 대신 빈 결과를 돌려줘야 한다.
-     */
-    public Long enforceOrgContext() {
+    /** 조회용 소유 스코프. 조직이면 멤버십만 있으면 된다(멤버도 조회 가능). */
+    public Owner readOwner() {
         AuthContext ctx = currentUser.context();
-        if (!ctx.isOrg()) return null;
         Customer me = currentUser.resolve();
+        if (!ctx.isOrg()) return Owner.customer(me.getId());
         organizations.membership(ctx.orgId(), me.getId())
                 .orElseThrow(() -> new ForbiddenException("해당 조직에 대한 접근 권한이 없습니다."));
-        return ctx.orgId();
+        return Owner.organization(ctx.orgId());
+    }
+
+    /** 쓰기용 소유 스코프. 조직이면 결제 관리 권한(owner/billing_manager)이 필요하다. */
+    public Owner writeOwner() {
+        AuthContext ctx = currentUser.context();
+        Customer me = currentUser.resolve();
+        if (!ctx.isOrg()) return Owner.customer(me.getId());
+        Membership m = organizations.membership(ctx.orgId(), me.getId())
+                .orElseThrow(() -> new ForbiddenException("해당 조직에 대한 접근 권한이 없습니다."));
+        if (!m.canManageBilling()) {
+            throw new ForbiddenException("이 작업은 조직의 소유자·결제 관리자만 할 수 있습니다.");
+        }
+        return Owner.organization(ctx.orgId());
     }
 }
