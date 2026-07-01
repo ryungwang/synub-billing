@@ -29,6 +29,8 @@ import java.util.List;
 @Service
 public class AdminService {
 
+    private static final java.security.SecureRandom RNG = new java.security.SecureRandom();
+
     private final SubscriptionRepository subscriptions;
     private final PaymentRepository payments;
     private final CustomerRepository customers;
@@ -107,7 +109,7 @@ public class AdminService {
     public List<AdminOrgDto> organizations() {
         requireAdmin();
         return organizations.findAllByOrderByIdDesc().stream()
-                .map(o -> new AdminOrgDto(o.getId(), o.getName(), o.getBusinessNo(),
+                .map(o -> new AdminOrgDto(o.getId(), o.getName(), o.getBusinessNo(), o.getOrgCode(),
                         o.getVerifyStatus(), o.getRejectReason()))
                 .toList();
     }
@@ -115,7 +117,22 @@ public class AdminService {
     @Transactional
     public void approveOrganization(Long id) {
         requireAdmin();
-        org(id).approve(Instant.now());
+        Organization o = org(id);
+        if (o.getOrgCode() == null) {
+            o.assignOrgCode(generateOrgCode());
+        }
+        o.approve(Instant.now());
+    }
+
+    /** 조직 코드 생성: SH- + 대문자 10자리. 유니크 제약이 최종 방어, 충돌 시 재시도. */
+    private String generateOrgCode() {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            StringBuilder sb = new StringBuilder("SH-");
+            for (int i = 0; i < 10; i++) sb.append((char) ('A' + RNG.nextInt(26)));
+            String code = sb.toString();
+            if (!organizations.existsByOrgCode(code)) return code;
+        }
+        throw new IllegalStateException("조직 코드 생성 실패(충돌 과다)");
     }
 
     @Transactional

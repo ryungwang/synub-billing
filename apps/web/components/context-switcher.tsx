@@ -110,7 +110,9 @@ export function ContextSwitcher() {
                 label={o.name}
                 hint={
                   o.verifyStatus === "verified"
-                    ? ROLE_LABEL[o.role] ?? o.role
+                    ? o.orgCode
+                      ? `${ROLE_LABEL[o.role] ?? o.role} · ${o.orgCode}`
+                      : ROLE_LABEL[o.role] ?? o.role
                     : o.verifyStatus === "pending"
                     ? "인증 심사중"
                     : "인증 반려"

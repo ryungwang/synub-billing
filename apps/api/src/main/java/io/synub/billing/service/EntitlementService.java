@@ -4,8 +4,10 @@ import io.synub.billing.domain.Customer;
 import io.synub.billing.domain.Membership;
 import io.synub.billing.domain.Subscription;
 import io.synub.billing.dto.Dtos.EntitlementDto;
+import io.synub.billing.domain.Organization;
 import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
+import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.repo.SubscriptionRepository;
 import io.synub.billing.tenant.CurrentTenant;
 import org.springframework.stereotype.Service;
@@ -24,15 +26,17 @@ public class EntitlementService {
     private final CustomerRepository customers;
     private final SubscriptionRepository subscriptions;
     private final MembershipRepository memberships;
+    private final OrganizationRepository organizations;
     private final CurrentTenant tenant;
     private final CurrentUser currentUser;
 
     public EntitlementService(CustomerRepository customers, SubscriptionRepository subscriptions,
-                              MembershipRepository memberships, CurrentTenant tenant,
-                              CurrentUser currentUser) {
+                              MembershipRepository memberships, OrganizationRepository organizations,
+                              CurrentTenant tenant, CurrentUser currentUser) {
         this.customers = customers;
         this.subscriptions = subscriptions;
         this.memberships = memberships;
+        this.organizations = organizations;
         this.tenant = tenant;
         this.currentUser = currentUser;
     }
@@ -46,7 +50,7 @@ public class EntitlementService {
                 .findByCompanyIdAndExternalId(tenant.companyId(), externalId)
                 .orElse(null);
         if (customer == null) {
-            return new EntitlementDto(false, null, null, List.of());
+            return new EntitlementDto(false, null, null, List.of(), null);
         }
 
         // 후보 = 개인 소유 구독 + 소속 조직 소유 구독
@@ -61,14 +65,21 @@ public class EntitlementService {
                 .filter(s -> "active".equals(s.getStatus()) || "past_due".equals(s.getStatus()))
                 .findFirst()
                 .map(this::toEntitlement)
-                .orElse(new EntitlementDto(false, null, null, List.of()));
+                .orElse(new EntitlementDto(false, null, null, List.of(), null));
     }
 
     private EntitlementDto toEntitlement(Subscription s) {
+        // 조직 소유 구독이면 org_code 포함 → 제품이 조직 테넌트로 그룹핑
+        String orgCode = null;
+        if (Owner.ORGANIZATION.equals(s.getOwnerType())) {
+            orgCode = organizations.findById(s.getOwnerId())
+                    .map(Organization::getOrgCode).orElse(null);
+        }
         return new EntitlementDto(
                 "active".equals(s.getStatus()),
                 s.getPlan().getPlanCode(),
                 s.getNextBillingDate(),
-                s.getPlan().getFeatures());
+                s.getPlan().getFeatures(),
+                orgCode);
     }
 }

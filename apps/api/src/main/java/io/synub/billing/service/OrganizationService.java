@@ -127,7 +127,7 @@ public class OrganizationService {
     }
 
     private OrgDto toOrgDto(Organization org, String role) {
-        return new OrgDto(org.getId(), org.getName(), role, org.getVerifyStatus());
+        return new OrgDto(org.getId(), org.getName(), role, org.getVerifyStatus(), org.getOrgCode());
     }
 
     /** 특정 고객의 조직 내 멤버십(없으면 empty). */

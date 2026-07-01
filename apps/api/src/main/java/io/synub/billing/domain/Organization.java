@@ -33,6 +33,10 @@ public class Organization {
     @Column(name = "rep_verified", nullable = false)
     private boolean repVerified;
 
+    /** 조직 테넌트 코드 — 승인 시 부여. 제품이 조직구독 그룹핑에 쓰는 외부 키. */
+    @Column(name = "org_code")
+    private String orgCode;
+
     /** pending | verified | rejected */
     @Column(name = "verify_status", nullable = false)
     private String verifyStatus = "pending";
@@ -68,6 +72,11 @@ public class Organization {
         this.repVerified = true;
     }
 
+    /** 조직 코드 부여(승인 시 1회, 불변). */
+    public void assignOrgCode(String code) {
+        if (this.orgCode == null) this.orgCode = code;
+    }
+
     public void approve(Instant when) {
         this.verifyStatus = "verified";
         this.verifiedAt = when;
@@ -89,6 +98,7 @@ public class Organization {
     public String getRepName() { return repName; }
     public String getOpenDate() { return openDate; }
     public boolean isRepVerified() { return repVerified; }
+    public String getOrgCode() { return orgCode; }
     public String getVerifyStatus() { return verifyStatus; }
     public String getRejectReason() { return rejectReason; }
     public Instant getVerifiedAt() { return verifiedAt; }

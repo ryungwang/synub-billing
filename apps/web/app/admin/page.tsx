@@ -150,11 +150,12 @@ export default function AdminPage() {
         </div>
         <Table
           rows={orgs}
-          cols={["회사", "사업자등록번호", "상태", ""]}
+          cols={["회사", "사업자등록번호", "조직코드", "상태", ""]}
           render={(o: ApiAdminOrg) => (
             <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
               <Td className="font-medium">{o.name}</Td>
               <Td className="tnum text-muted-foreground">{o.businessNo ?? "—"}</Td>
+              <Td className="tnum font-semibold">{o.orgCode ?? "—"}</Td>
               <Td><OrgStatusBadge status={o.verifyStatus} reason={o.rejectReason} /></Td>
               <Td className="text-right">
                 {o.businessNo && (

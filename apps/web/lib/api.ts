@@ -152,12 +152,14 @@ export interface ApiOrg {
   name: string;
   role: OrgRole;
   verifyStatus: VerifyStatus;
+  orgCode: string | null;
 }
 
 export interface ApiAdminOrg {
   id: number;
   name: string;
   businessNo: string | null;
+  orgCode: string | null;
   verifyStatus: VerifyStatus;
   rejectReason: string | null;
 }

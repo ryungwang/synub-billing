@@ -2,6 +2,7 @@ package io.synub.billing.service;
 
 import io.synub.billing.domain.Product;
 import io.synub.billing.domain.Subscription;
+import io.synub.billing.repo.OrganizationRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
@@ -21,9 +22,11 @@ public class SubscriptionWebhooks {
     public static final String PLAN_CHANGED = "subscription.plan_changed";
 
     private final WebhookService webhooks;
+    private final OrganizationRepository organizations;
 
-    public SubscriptionWebhooks(WebhookService webhooks) {
+    public SubscriptionWebhooks(WebhookService webhooks, OrganizationRepository organizations) {
         this.webhooks = webhooks;
+        this.organizations = organizations;
     }
 
     public void fire(Subscription sub, String event) {
@@ -36,6 +39,12 @@ public class SubscriptionWebhooks {
         data.put("status", sub.getStatus());
         data.put("amount", sub.getPlan().getAmount());
         data.put("nextBillingDate", String.valueOf(sub.getNextBillingDate()));
+        // 조직 소유 구독이면 owner/org_code 포함 → 제품이 조직 테넌트로 그룹핑
+        data.put("ownerType", sub.getOwnerType());
+        if (Owner.ORGANIZATION.equals(sub.getOwnerType())) {
+            organizations.findById(sub.getOwnerId())
+                    .ifPresent(o -> data.put("orgCode", o.getOrgCode()));
+        }
         webhooks.send(product.getId(), product.getWebhookUrl(), event, data);
     }
 }

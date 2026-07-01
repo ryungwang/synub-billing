@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface OrganizationRepository extends JpaRepository<Organization, Long> {
     boolean existsByBusinessNo(String businessNo);
+    boolean existsByOrgCode(String orgCode);
     List<Organization> findAllByOrderByIdDesc();
 }
