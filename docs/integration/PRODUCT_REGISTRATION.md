@@ -222,7 +222,12 @@ private static final Map<String, UsageDto> USAGE = Map.of(
 
 ```
 GET /api/entitlements?customer={customerExternalId}&service={serviceCode}
+Header: X-Service-Key: {서비스 키}     ← 필수(서버-투-서버 인증)
 ```
+
+> 🔐 **서비스 키 필수.** 이 API는 사용자 토큰이 아닌 **서비스 키**로 인증한다(임의 고객 정보 조회 방지).
+> 헤더 `X-Service-Key`에 빌링이 발급한 키(운영 env `SERVICE_API_KEY`, 로컬 기본 `local-service-key`)를 담아
+> **서버에서만** 호출할 것(브라우저 노출 금지). 키 없거나 틀리면 `403`.
 
 | 파라미터 | 필수 | 의미 |
 |---------|------|------|

@@ -50,6 +50,18 @@ app:
     store-id: ${PORTONE_STORE_ID}
     channel-key: ${PORTONE_CHANNEL_KEY}
     api-secret: ${PORTONE_API_SECRET}
+    identity-channel-key: ${PORTONE_IDENTITY_CHANNEL_KEY:}
+    # PG 웹훅 서명검증 시크릿(필수 — 없으면 웹훅 거부)
+    webhook-secret: ${PORTONE_WEBHOOK_SECRET}
+  internal:
+    # /internal 보호 시크릿 — 디폴트 금지(필수)
+    secret: ${INTERNAL_SECRET}
+  entitlement:
+    # 제품→빌링 서비스 키 — 디폴트 금지(필수)
+    api-key: ${SERVICE_API_KEY}
+  business:
+    # 국세청 진위확인/상태조회 키(권장 — 없으면 자동검증 skip, 서류심사로만)
+    api-key: ${BUSINESS_API_KEY:}
   mail:
     from: ${MAIL_FROM:no-reply@synub.io}
     app-base-url: ${APP_BASE_URL}

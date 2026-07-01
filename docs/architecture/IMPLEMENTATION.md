@@ -111,7 +111,9 @@
 | 조직 | `GET/POST /organizations`, `.../{id}/members`(GET/PATCH/DELETE), `.../{id}/invitations`(GET/POST/DELETE) |
 | 초대(수신) | `GET /invitations`, `POST /invitations/{id}/{accept,decline}` |
 | 관리자 | `GET /admin/{stats,subscriptions,payments,organizations}`, `POST /admin/payments/{id}/refund`, `POST /admin/organizations/{id}/{approve,reject}`, `GET /admin/organizations/{id}/document` |
-| 제품 연동 | `GET /api/entitlements`, `POST /webhooks/portone`, `POST /internal/billing/run` |
+| 제품 연동 | `GET /api/entitlements`(X-Service-Key), `POST /webhooks/portone`(서명검증), `POST /internal/billing/run`(X-Internal-Secret) |
+
+> 🔐 공개경로 3종은 사용자 토큰이 아닌 **서비스 인증**: entitlements=`X-Service-Key`, internal=`X-Internal-Secret`, PortOne 웹훅=Standard Webhooks 서명검증(리플레이 방지). 시크릿 미설정 시 fail-closed(거부).
 
 ---
 

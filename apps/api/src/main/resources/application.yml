@@ -51,6 +51,14 @@ app:
     api-secret: ${PORTONE_API_SECRET:}
     # 대표자 본인인증용 채널(별도). 없으면 본인인증 단계 생략(서류+관리자 심사로 대체).
     identity-channel-key: ${PORTONE_IDENTITY_CHANNEL_KEY:}
+    # PG 웹훅 서명검증 시크릿(포트원 콘솔 whsec_...). 없으면 웹훅 거부(fail-closed).
+    webhook-secret: ${PORTONE_WEBHOOK_SECRET:}
+  internal:
+    # /internal 운영 엔드포인트 보호. 운영은 반드시 강한 시크릿 주입.
+    secret: ${INTERNAL_SECRET:local-internal-secret}
+  entitlement:
+    # 제품→빌링 entitlements 조회 서비스 키. 운영은 반드시 env 주입.
+    api-key: ${SERVICE_API_KEY:local-service-key}
   business:
     # 국세청(공공데이터포털). api-key 없으면 형식·체크섬만 검증(로컬).
     status-api-url: ${BUSINESS_STATUS_API_URL:https://api.odcloud.kr/api/nts-businessman/v1/status}

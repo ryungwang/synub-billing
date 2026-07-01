@@ -7,9 +7,16 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(Tenant tenant, Cors cors, Billing billing,
                             Webhook webhook, Portone portone, Sso sso, Mail mail,
-                            Business business, Storage storage) {
+                            Business business, Storage storage,
+                            Internal internal, Entitlement entitlement) {
 
     public record Tenant(long defaultCompanyId) {}
+
+    /** 내부 운영 엔드포인트(/internal) 보호용 시크릿. */
+    public record Internal(String secret) {}
+
+    /** 제품→빌링 entitlements 조회 인증용 서비스 API 키. */
+    public record Entitlement(String apiKey) {}
 
     /**
      * 사업자 검증. apiKey 있으면 국세청 API 사용(없으면 형식·체크섬만, 로컬).
@@ -65,5 +72,6 @@ public record AppProperties(Tenant tenant, Cors cors, Billing billing,
      * apiSecret은 시크릿이라 디폴트 금지(env 주입). channelKey는 발급 채널, storeId는 상점 식별코드.
      */
     public record Portone(boolean enabled, String apiBase, String storeId,
-                          String channelKey, String apiSecret, String identityChannelKey) {}
+                          String channelKey, String apiSecret, String identityChannelKey,
+                          String webhookSecret) {}
 }
