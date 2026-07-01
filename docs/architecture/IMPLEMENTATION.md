@@ -38,6 +38,7 @@
 로그인은 1개(통합계정), 데이터는 **컨텍스트 + 역할**로 격리. 상세 설계는 [`IDENTITY_AND_ORG_BILLING.md`](IDENTITY_AND_ORG_BILLING.md).
 
 - **조직/멤버십/역할**(`organization`/`membership`): 역할 `owner` / `billing_manager` / `member`. 조직 생성자는 owner.
+- **사업자 인증(도용·마구잡이 방지)**: 회사 생성 시 ①사업자등록번호 형식·체크섬(+국세청 상태조회 API 훅, `BusinessVerifier`)로 **실존** 검증·중복 금지 ②**사업자등록증 서류 제출**(`StorageService`, 로컬 파일시스템/운영 S3) ③**관리자 심사(승인/반려)**로 **소유권** 확정. 생성 직후 `verify_status=pending`이며 **인증 완료 전 결제·구독 차단**(`CurrentScope.writeOwner`). 규칙: [[memory: org-verification-rule]].
 - **개인/회사 컨텍스트**: 프론트 상단 전환기 → `X-Synub-Context: personal | org:{id}` 헤더. 빌링 `CurrentScope`가 소유 스코프(`Owner`)를 결정하고 조직이면 멤버십 검증(미소속 403).
 - **소유 스코프 격리**: 구독·카드에 `owner_type/owner_id`(개인 customer / 조직 organization). 조회는 소유 스코프로만, 쓰기는 조직이면 결제관리 역할(owner/billing_manager) 필요. 개인 카드로 회사 구독 등 **교차 차단**.
 - **멤버 초대**: 관리자가 이메일로 초대(pending) → **초대 이메일 발송** → 대상이 로그인(토큰 email 매칭) 후 앱 내 "받은 초대"에서 수락 시 멤버십 생성. owner의 역할 변경/제거(마지막 owner 보호).
@@ -109,7 +110,7 @@
 | 결제내역 | `GET /payments` |
 | 조직 | `GET/POST /organizations`, `.../{id}/members`(GET/PATCH/DELETE), `.../{id}/invitations`(GET/POST/DELETE) |
 | 초대(수신) | `GET /invitations`, `POST /invitations/{id}/{accept,decline}` |
-| 관리자 | `GET /admin/{stats,subscriptions,payments}`, `POST /admin/payments/{id}/refund` |
+| 관리자 | `GET /admin/{stats,subscriptions,payments,organizations}`, `POST /admin/payments/{id}/refund`, `POST /admin/organizations/{id}/{approve,reject}`, `GET /admin/organizations/{id}/document` |
 | 제품 연동 | `GET /api/entitlements`, `POST /webhooks/portone`, `POST /internal/billing/run` |
 
 ---
