@@ -21,6 +21,11 @@ public final class ApiExceptions {
         public ForbiddenException(String message) { super(message); }
     }
 
+    /** 충돌(예: 동일 멱등키 요청이 이미 처리 중). */
+    public static class ConflictException extends RuntimeException {
+        public ConflictException(String message) { super(message); }
+    }
+
     @RestControllerAdvice
     public static class Handler {
         @ExceptionHandler(NotFoundException.class)
@@ -36,6 +41,11 @@ public final class ApiExceptions {
         @ExceptionHandler(ForbiddenException.class)
         public ProblemDetail forbidden(ForbiddenException e) {
             return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+        }
+
+        @ExceptionHandler(ConflictException.class)
+        public ProblemDetail conflict(ConflictException e) {
+            return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 }

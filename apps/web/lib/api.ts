@@ -206,10 +206,16 @@ export const api = {
   payments: () => http<ApiPayment[]>("/payments"),
   cards: () => http<ApiCard[]>("/billing/keys"),
 
-  createSubscription: (planId: number, billingKeyId: number, seats?: number) =>
+  createSubscription: (
+    planId: number,
+    billingKeyId: number,
+    seats?: number,
+    idempotencyKey?: string
+  ) =>
     http<ApiSubscription>("/subscriptions", {
       method: "POST",
       body: JSON.stringify({ planId, billingKeyId, seats }),
+      headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {},
     }),
   cancelSubscription: (id: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/cancel`, { method: "POST" }),

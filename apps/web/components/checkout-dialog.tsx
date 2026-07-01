@@ -54,6 +54,7 @@ export function CheckoutDialog({
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [seats, setSeats] = React.useState(1);
+  const [idemKey, setIdemKey] = React.useState("");
 
   React.useEffect(() => {
     if (!open) return;
@@ -61,6 +62,8 @@ export function CheckoutDialog({
     setAgreed(false);
     setError(null);
     setSeats(1);
+    // 이 결제 시도의 멱등키 — 재시도(네트워크 오류 등) 시 재사용해 이중 청구 방지
+    setIdemKey(crypto.randomUUID());
     api
       .cards()
       .then((cs) => {
@@ -91,7 +94,8 @@ export function CheckoutDialog({
       await api.createSubscription(
         target.planId,
         cardId,
-        target.pricingType === "per_seat" ? seats : undefined
+        target.pricingType === "per_seat" ? seats : undefined,
+        idemKey
       );
       setDone(true);
     } catch (e) {

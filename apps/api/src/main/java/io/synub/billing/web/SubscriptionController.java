@@ -1,6 +1,7 @@
 package io.synub.billing.web;
 
 import io.synub.billing.dto.Dtos.*;
+import io.synub.billing.service.IdempotencyService;
 import io.synub.billing.service.SubscriptionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,9 +14,11 @@ import java.util.List;
 public class SubscriptionController {
 
     private final SubscriptionService service;
+    private final IdempotencyService idempotency;
 
-    public SubscriptionController(SubscriptionService service) {
+    public SubscriptionController(SubscriptionService service, IdempotencyService idempotency) {
         this.service = service;
+        this.idempotency = idempotency;
     }
 
     @GetMapping
@@ -23,10 +26,14 @@ public class SubscriptionController {
         return service.list();
     }
 
+    /** 구독 생성(+첫 결제). Idempotency-Key 헤더로 이중 청구 방지. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SubscriptionDto create(@Valid @RequestBody CreateSubscriptionRequest req) {
-        return service.create(req);
+    public SubscriptionDto create(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody CreateSubscriptionRequest req) {
+        return idempotency.execute("subscription:create", idempotencyKey,
+                SubscriptionDto.class, () -> service.create(req));
     }
 
     @PostMapping("/{id}/cancel")
