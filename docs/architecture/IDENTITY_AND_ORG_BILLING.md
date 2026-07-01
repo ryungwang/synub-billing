@@ -56,12 +56,12 @@
 
 ## 3. 데이터 모델 (빌링 repo에 추가될 것)
 
-> ⚠️ 현재 스키마의 `company_id`는 **신업(운영사)** 테넌트다. 아래 `organization`은 **고객사(구매 회사)**로 별개 개념.
-> 현재 코드는 전부 개인(`customer`) 단위 → 아래는 신규 확장.
+> ⚠️ 빌링에는 `company_id`가 없다(운영사 전용 단일 서비스 — V4에서 제거). 고객 회사 격리는 아래 `organization`/`org_code`가 담당한다.
+> `customer`(개인) 단위가 기본이고, 회사 구매는 `organization`으로 확장한다.
 
 ```
 organization         구매 회사 (예: "우리회사")
-  id, company_id(=신업 테넌트), name, created_at
+  id, name, org_code(SH-XXXXXXXXXX, 제품 연동 테넌트 키), verified, created_at
 
 membership           사람 ↔ 조직 + 역할
   id, organization_id, customer_id, role  (owner | billing_manager | member)

@@ -109,32 +109,32 @@ customer (외부 통합계정 ID 보관)
         └─ payment (N) ── 청구 이력
 ```
 
-### 4.2 테이블 스키마 (PostgreSQL, 멀티테넌트 대비 company_id 포함)
+### 4.2 테이블 스키마 (PostgreSQL — 빌링은 운영사 단일 서비스, company_id 없음)
 
 ```sql
 -- 통합계정 유저 (결제 서비스가 보관하는 최소 정보)
 CREATE TABLE customer (
     id            BIGSERIAL PRIMARY KEY,
-    company_id    BIGINT      NOT NULL,          -- 멀티테넌트 대비
     external_id   VARCHAR(64) NOT NULL,          -- 통합계정(SSO) 유저 ID
     email         VARCHAR(255),                  -- 영수증·안내 발송용
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (company_id, external_id)
+    UNIQUE (external_id)
 );
 
 -- 제품 카탈로그
 CREATE TABLE product (
     id            BIGSERIAL PRIMARY KEY,
-    company_id    BIGINT      NOT NULL,
-    service_code  VARCHAR(50) NOT NULL,          -- 'doc-analysis', 'threads'
+    service_code  VARCHAR(50) NOT NULL,          -- 'doc-analysis', 'threads', 'office'
     name          VARCHAR(100) NOT NULL,
     description   TEXT,
     domain_url    VARCHAR(255),                  -- docs.synub.io
     demo_url      VARCHAR(255),
     webhook_url   VARCHAR(255),                  -- 이 제품으로 상태변화 통보
     status        VARCHAR(20)  NOT NULL DEFAULT 'active', -- active/hidden
+    org_only      BOOLEAN     NOT NULL DEFAULT false,     -- 회사 전용 제품(그룹웨어 등)
+    onboarding_url VARCHAR(255),                 -- 초기설정 온보딩 페이지(핸드오프)
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (company_id, service_code)
+    UNIQUE (service_code)
 );
 
 -- 요금제
@@ -190,7 +190,7 @@ CREATE TABLE payment (
 );
 ```
 
-> 멀티테넌트: 신업 메모리 원칙대로 company_id를 핵심 테이블에 둠. 단일 법인 운영 중이라 당장은 고정값이지만 구조는 미리 잡아둠.
+> 테넌트: 빌링은 운영사(신업) 전용 단일 서비스라 `company_id`를 두지 않는다(항상 1이라 혼동만 유발 → V4에서 제거). 고객 회사 격리·구독 소유는 `organization`/`org_code`가 담당한다(`docs/architecture/IDENTITY_AND_ORG_BILLING.md`).
 
 ---
 

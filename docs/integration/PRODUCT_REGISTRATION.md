@@ -25,9 +25,9 @@
 ### 1.1 규칙 (반드시 준수)
 
 - 파일 위치: `apps/api/src/main/resources/db/migration/`
-- 파일명: `V{다음번호}__{설명}.sql` (예: `V6__product_ooffice.sql`) — 언더스코어 **2개**.
-- **현재 최신 = `V5`. 다음 신규 번호는 `V6`.** (`ls`로 항상 최신 번호 재확인 후 +1)
-- **기존 V1~V5 파일은 절대 수정·삭제 금지.** Flyway는 적용된 마이그레이션을 불변으로 취급 → 내용이 바뀌면 체크섬 불일치로 부팅 실패. 변경은 **항상 새 버전 파일 추가**로만.
+- 파일명: `V{다음번호}__{설명}.sql` (예: `V5__product_ooffice.sql`) — 언더스코어 **2개**.
+- **현재 최신 = `V4`. 다음 신규 번호는 `V5`.** (`ls`로 항상 최신 번호 재확인 후 +1)
+- **기존 V1~V4 파일은 절대 수정·삭제 금지.** Flyway는 적용된 마이그레이션을 불변으로 취급 → 내용이 바뀌면 체크섬 불일치로 부팅 실패. 변경은 **항상 새 버전 파일 추가**로만.
 - 스키마: Flyway `default-schema = billing`. SQL 안에서 스키마 접두사 없이 테이블명만 쓰면 `billing` 스키마에 들어간다.
 - 적용 시점: 백엔드 부팅 시 자동 마이그레이션. 파일 추가 후 **백엔드 재기동**하면 반영된다.
 
@@ -35,24 +35,31 @@
 
 ```
 product(
-  id           BIGINT IDENTITY PK          -- INSERT에서 생략 권장(자동생성). 명시하면 §1.4 setval 필요
-  company_id   BIGINT   NOT NULL           -- 멀티테넌트. 현재 MVP는 단일 법인 = 1 고정 (아래 §4)
-  service_code VARCHAR(50) NOT NULL         -- 안정적 고유 식별자. (company_id, service_code) UNIQUE
-  name         VARCHAR(100) NOT NULL        -- 화면 표시 한글명 (프론트 아이콘 매핑 키! §2)
-  category     VARCHAR(50)                  -- 분류 태그 (예: 생산성/마케팅/재무/CS)
-  description  TEXT                         -- 카드에 노출되는 한 줄 설명
-  domain_url   VARCHAR(255)                 -- 제품 서비스 URL (예: https://office.synub.io)
-  demo_url     VARCHAR(255)                 -- 없으면 null
-  webhook_url  VARCHAR(255)                 -- 구독 상태 웹훅 수신 URL. 컨벤션: {domain}/webhooks/billing
-  status       VARCHAR(20) NOT NULL 'active'-- 'active' | (숨김은 'inactive' 등, 하드삭제 금지 §5)
-  sort_order   INTEGER NOT NULL 0           -- 카탈로그 정렬(오름차순)
+  id            BIGINT IDENTITY PK          -- INSERT에서 생략 권장(자동생성). 명시하면 §1.4 setval 필요
+  service_code  VARCHAR(50) NOT NULL         -- 안정적 고유 식별자. service_code UNIQUE (단독)
+  name          VARCHAR(100) NOT NULL        -- 화면 표시 한글명 (프론트 아이콘 매핑 키! §2)
+  category      VARCHAR(50)                  -- 분류 태그 (예: 생산성/마케팅/재무/CS)
+  description   TEXT                         -- 카드에 노출되는 한 줄 설명
+  domain_url    VARCHAR(255)                 -- 제품 서비스 URL (예: https://office.synub.io)
+  demo_url      VARCHAR(255)                 -- 없으면 null
+  webhook_url   VARCHAR(255)                 -- 구독 상태 웹훅 수신 URL. 컨벤션: {domain}/webhooks/billing
+  status        VARCHAR(20) NOT NULL 'active'-- 'active' | (숨김은 'inactive' 등, 하드삭제 금지 §5)
+  sort_order    INTEGER NOT NULL 0           -- 카탈로그 정렬(오름차순)
+  org_only      BOOLEAN NOT NULL false       -- true면 회사(조직) 컨텍스트에서만 구독 가능(예: 그룹웨어)
+  onboarding_url VARCHAR(255)                -- 초기설정 온보딩 페이지 URL. 있으면 구독 후 '설정하러 가기' 핸드오프(§7.5) 활성화
 )
 ```
 
+> ⚠️ **`company_id` 컬럼은 없다(V4에서 제거됨).** 빌링은 운영사(신업) 전용 단일 서비스라 테넌트 컬럼을 두지 않는다.
+> 고객 회사 격리는 `organization`/`org_code`로 한다(§7, `IDENTITY_AND_ORG_BILLING.md`). 신규 INSERT에 `company_id`를 넣지 말 것.
+
 - **`service_code`**: 소문자-케밥(`doc-analysis`, `office`, `threads`). 한 번 정하면 바꾸지 말 것 —
-  `DtoMapper.USAGE` 키, 웹훅 페이로드, 제품측 entitlements 조회가 이 값에 묶인다.
+  `DtoMapper.USAGE` 키, 웹훅 페이로드, 제품측 entitlements 조회가 이 값에 묶인다. **`service_code` 자체가 UNIQUE**(중복 금지).
 - **`webhook_url`**: 제품이 구독 상태변화(activated/canceled/payment_failed/suspended/plan_changed)를
   받을 엔드포인트. 없으면 웹훅이 발송돼도 받을 곳이 없다. 컨벤션 `https://{sub}.synub.io/webhooks/billing`.
+- **`org_only`**: 그룹웨어처럼 회사만 쓰는 제품은 `true`. 개인 컨텍스트에서 구독 버튼이 막힌다.
+- **`onboarding_url`**: 셋업이 필요한 제품(그룹웨어 등)의 초기설정 페이지. 채워두면 결제 완료 후
+  서명 핸드오프 링크로 이 URL에 진입시킬 수 있다(§7.5). 즉시이용형 제품은 비워둔다(null).
 
 ### 1.3 `plan` 테이블 컬럼 계약
 
@@ -83,20 +90,21 @@ plan(
 `plan.product_id`는 방금 넣은 제품을 `service_code`로 되찾아 참조한다.
 
 ```sql
--- V6__product_ooffice.sql
--- OOffice(그룹웨어) 제품 + 요금제 등록. company_id=1(단일 법인).
+-- V5__product_ooffice.sql
+-- OOffice(그룹웨어) 제품 + 요금제 등록. 그룹웨어는 org_only=true + onboarding_url 지정.
 
-INSERT INTO product (company_id, service_code, name, category, description, domain_url, webhook_url, status, sort_order)
-VALUES (1, 'office', 'OOffice', '그룹웨어',
+INSERT INTO product (service_code, name, category, description, domain_url, webhook_url, status, sort_order, org_only, onboarding_url)
+VALUES ('office', 'OOffice', '그룹웨어',
         '문서·회계·전자결재·인사를 한 곳에서. 팀 협업을 위한 올인원 그룹웨어.',
-        'https://office.synub.io', 'https://office.synub.io/webhooks/billing', 'active', 10);
+        'https://office.synub.io', 'https://office.synub.io/webhooks/billing', 'active', 10,
+        true, 'https://office.synub.io/onboarding');
 
 INSERT INTO plan (product_id, plan_code, name, tagline, amount, billing_cycle, features, is_highlight, sort_order)
 VALUES
- ((SELECT id FROM product WHERE company_id=1 AND service_code='office'),
+ ((SELECT id FROM product WHERE service_code='office'),
   'basic', 'Basic', '소규모 팀', 9900, 'monthly',
   '["문서 관리","전자결재","기본 인사관리"]'::jsonb, false, 1),
- ((SELECT id FROM product WHERE company_id=1 AND service_code='office'),
+ ((SELECT id FROM product WHERE service_code='office'),
   'pro', 'Pro', '성장하는 팀', 19900, 'monthly',
   '["Basic 전체","회계·전표","권한 관리","우선 지원"]'::jsonb, true, 2);
 ```
@@ -148,17 +156,19 @@ private static final Map<String, UsageDto> USAGE = Map.of(
 
 ---
 
-## 4. 멀티테넌트 / company_id
+## 4. 테넌트 모델 (company_id 없음)
 
-- 스키마는 멀티테넌트 대비로 `company_id`를 갖지만, **현재 MVP는 단일 법인 `company_id = 1` 고정**이다
-  (`tenant/CurrentTenant.java`가 설정에서 값을 읽어 1을 반환). 신규 제품·플랜 INSERT는 **모두 `company_id = 1`**.
-- `(company_id, service_code)`가 UNIQUE이므로 같은 법인 내 `service_code` 중복 금지.
+- 빌링은 **운영사(신업) 전용 단일 서비스**다. 과거 존재하던 `company_id`(항상 1인 운영사 테넌트) 컬럼은
+  **혼동을 유발해 V4에서 완전히 제거**했다(`tenant/CurrentTenant.java`도 삭제). 신규 제품·플랜 INSERT에 `company_id`를 넣지 말 것.
+- **제품 유일성 = `service_code` 단독 UNIQUE.** 같은 `service_code` 중복 금지.
+- **고객 회사 격리는 `organization`/`org_code`로 한다** — 빌링의 company_id가 아니다. 조직·역할·구독 소유는
+  `IDENTITY_AND_ORG_BILLING.md` 참조. (제품 서비스가 자기 테넌트를 가르는 키도 `org_code`이지 company_id가 아니다.)
 
 ---
 
 ## 5. 하지 말 것 / 주의사항
 
-- ❌ 기존 `V1`~`V5` 마이그레이션 수정·삭제 (체크섬 불일치 → 부팅 실패). 항상 새 `V{n}` 추가.
+- ❌ 기존 `V1`~`V4` 마이그레이션 수정·삭제 (체크섬 불일치 → 부팅 실패). 항상 새 `V{n}` 추가.
 - ❌ 제품/플랜 **하드 삭제**. 이미 구독(`subscription.plan_id`)이 참조 중이면 FK 위반이 나거나 결제 이력이 깨진다.
   판매 중단은 `status`를 `'active'`가 아닌 값으로 바꾸고 카탈로그 조회에서 거르는 방식(소프트) 권장.
 - ❌ `features`에 잘못된 JSON(따옴표 누락, 트레일링 콤마) → `::jsonb` 캐스팅 실패로 마이그레이션 오류.
@@ -359,13 +369,43 @@ X-Synub-Signature: sha256={payload를 HMAC-SHA256으로 서명한 hex}
 
 ---
 
+### ③ 온보딩 핸드오프 — 구독 직후 제품 초기설정으로 이동 (범용)
+
+셋업이 필요한 제품(그룹웨어 등)은 결제 완료 후 **"설정하러 가기"**로 제품 온보딩 페이지에 진입한다.
+빌링은 이때 **변조 방지 서명 링크**를 발급한다. **특정 제품에 종속되지 않는 범용 API** — `service_code` +
+`product.onboarding_url`로만 동작하므로(하드코딩 없음), 새 제품도 `onboarding_url`만 채우면 그대로 쓴다.
+
+```
+GET /organizations/{orgId}/handoff?service={serviceCode}
+Authorization: (로그인 사용자 세션 — 해당 조직의 owner/billing_manager만)
+
+→ 200 { "url": "https://office.synub.io/onboarding?customer=usr_...&company=우리회사&orgCode=SH-...&sig=sha256=..." }
+```
+
+발급 조건(모두 충족해야 함):
+- 호출자가 그 조직의 **owner/billing_manager**(`requireManager`). member는 거부.
+- 조직이 **인증 완료**(`verified` + `org_code` 존재). 미인증 조직은 `400`(결제·초기설정 차단 규칙).
+- 제품에 **`onboarding_url`이 등록**돼 있어야 함. 없으면 `400`("초기설정 온보딩을 제공하지 않습니다").
+
+서명 규약(웹훅과 동일):
+- 페이로드 = `"{customerExternalId}|{orgCode}"`, 키 = `app.webhook.secret`(로컬 `local-dev-webhook-secret`).
+- 반환 URL 쿼리에 `customer`·`company`(조직명)·`orgCode`·`sig`(`sha256=hex`)가 실린다.
+- **제품 온보딩 수신부는 `customer|orgCode`를 같은 시크릿으로 재서명해 `sig`와 상수시간 비교**해야 한다(위조 차단).
+  검증 통과 시 그 `orgCode`로 워크스페이스를 생성/바인딩한다. (office 예: `OnboardingService.validLink(customer, orgCode, sig)`)
+
+> 이 링크는 **신원 증명이 아니라 조직 셋업 진입권**이다. 실제 로그인은 SSO로 별도 확립하고, 핸드오프는
+> "이 사람이 이 조직 셋업을 시작하도록" 서명으로 보증하는 용도. 온보딩 완료 후에는 §7 신원 규약대로 SSO 로그인으로 운영.
+
+---
+
 ### 연계 구현 체크리스트 (제품 서비스 쪽)
 
-- [ ] 빌링에 `service_code`·`webhook_url` 등록 (이 문서 §1)
+- [ ] 빌링에 `service_code`·`webhook_url` 등록 (이 문서 §1). 셋업형이면 `org_only`·`onboarding_url`도.
 - [ ] `POST {webhook_url}` 수신 엔드포인트 구현 (서명검증 + 멱등 + 2xx)
 - [ ] 통합 시크릿(`app.webhook.secret`) 공유
 - [ ] 기능 접근 시 `GET /api/entitlements?service={code}&customer={userId}`로 권한 게이팅
 - [ ] 이벤트별 권한 부여/회수 정책 정의 (특히 `payment_failed`·`suspended`·`canceled` 처리)
+- [ ] (셋업형) 온보딩 수신부 구현 — `customer|orgCode` 서명 검증 + `org_code`로 워크스페이스 바인딩 (§7 ③)
 
 > 관련 코드: `web/EntitlementController.java`(조회 API), `service/EntitlementService.java`(판정 로직),
 > `service/SubscriptionWebhooks.java`(이벤트·페이로드), `service/WebhookService.java`(서명·재시도),
@@ -377,11 +417,13 @@ X-Synub-Signature: sha256={payload를 HMAC-SHA256으로 서명한 hex}
 
 | 관심사 | 파일 |
 |--------|------|
-| 스키마 정의 | `apps/api/src/main/resources/db/migration/V1__init.sql` (product/plan DDL) |
-| 시드 예시 | `apps/api/src/main/resources/db/migration/V2__seed.sql` (제품 4 + 플랜 8) |
-| 저가 테스트 플랜 예시 | `apps/api/.../db/migration/V5__test_plan.sql` |
+| 스키마 정의 + 데모 시드 | `apps/api/src/main/resources/db/migration/V1__init.sql` (product/plan/customer DDL + 제품 4·플랜 시드) |
+| org_code 도입 | `apps/api/.../db/migration/V2__org_code.sql` |
+| onboarding_url 도입 | `apps/api/.../db/migration/V3__product_onboarding_url.sql` |
+| company_id 제거 | `apps/api/.../db/migration/V4__drop_company_id.sql` |
 | 엔티티 | `apps/api/.../domain/Product.java`, `Plan.java` |
 | 읽기 API | `apps/api/.../web/CatalogController.java` (`GET /products`), `service/CatalogService.java` |
+| 온보딩 핸드오프 | `apps/api/.../web/HandoffController.java` (`GET /organizations/{orgId}/handoff?service=`) |
 | DTO 변환·사용량 | `apps/api/.../service/DtoMapper.java` |
 | 프론트 카탈로그 | `apps/web/app/products/page.tsx`, `components/product-icon.tsx` |
 | PRD | `README.md` (§2 "새 제품 추가가 코드 수정 없이 카탈로그 등록만으로") |
