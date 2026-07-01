@@ -24,6 +24,15 @@ public class Organization {
     @Column(name = "business_doc")
     private String businessDoc;
 
+    @Column(name = "rep_name")
+    private String repName;
+
+    @Column(name = "open_date")
+    private String openDate;
+
+    @Column(name = "rep_verified", nullable = false)
+    private boolean repVerified;
+
     /** pending | verified | rejected */
     @Column(name = "verify_status", nullable = false)
     private String verifyStatus = "pending";
@@ -45,11 +54,19 @@ public class Organization {
     }
 
     /** 사업자 정보 등록(생성 시). 소유권 심사 전이라 pending. */
-    public void submitBusiness(String businessNo, String businessDoc) {
+    public void submitBusiness(String businessNo, String repName, String openDate, String businessDoc) {
         this.businessNo = businessNo;
+        this.repName = repName;
+        this.openDate = openDate;
         this.businessDoc = businessDoc;
         this.verifyStatus = "pending";
         this.rejectReason = null;
+    }
+
+    /** 대표자 본인인증 통과 → 소유권 자동 확정(즉시 인증완료). */
+    public void confirmByRepresentative(Instant when) {
+        this.repVerified = true;
+        approve(when);
     }
 
     public void approve(Instant when) {
@@ -70,6 +87,9 @@ public class Organization {
     public String getName() { return name; }
     public String getBusinessNo() { return businessNo; }
     public String getBusinessDoc() { return businessDoc; }
+    public String getRepName() { return repName; }
+    public String getOpenDate() { return openDate; }
+    public boolean isRepVerified() { return repVerified; }
     public String getVerifyStatus() { return verifyStatus; }
     public String getRejectReason() { return rejectReason; }
     public Instant getVerifiedAt() { return verifiedAt; }

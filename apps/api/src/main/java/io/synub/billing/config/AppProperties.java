@@ -12,10 +12,10 @@ public record AppProperties(Tenant tenant, Cors cors, Billing billing,
     public record Tenant(long defaultCompanyId) {}
 
     /**
-     * 사업자등록번호 검증. apiKey 있으면 국세청 상태조회 API로 실존·영업상태 확인,
-     * 없으면 형식·체크섬만 검증(로컬). statusApiUrl = 국세청(공공데이터포털) endpoint.
+     * 사업자 검증. apiKey 있으면 국세청 API 사용(없으면 형식·체크섬만, 로컬).
+     * statusApiUrl=상태조회(계속사업자), validateApiUrl=진위확인(번호+대표자+개업일 일치).
      */
-    public record Business(String statusApiUrl, String apiKey) {}
+    public record Business(String statusApiUrl, String validateApiUrl, String apiKey) {}
 
     /** 파일 저장. dir = 로컬 파일시스템 저장 경로(운영은 S3 어댑터로 교체). */
     public record Storage(String dir) {}
@@ -65,5 +65,5 @@ public record AppProperties(Tenant tenant, Cors cors, Billing billing,
      * apiSecret은 시크릿이라 디폴트 금지(env 주입). channelKey는 발급 채널, storeId는 상점 식별코드.
      */
     public record Portone(boolean enabled, String apiBase, String storeId,
-                          String channelKey, String apiSecret) {}
+                          String channelKey, String apiSecret, String identityChannelKey) {}
 }

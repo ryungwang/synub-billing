@@ -22,6 +22,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { api, type ApiOrg, type ApiInvitation } from "@/lib/api";
+import { verifyRepresentative, identityConfigured } from "@/lib/portone";
 import {
   rawContext,
   setContext,
@@ -233,11 +234,29 @@ function CreateOrgDialog({
 }) {
   const [name, setName] = React.useState("");
   const [businessNo, setBusinessNo] = React.useState("");
+  const [repName, setRepName] = React.useState("");
+  const [openDate, setOpenDate] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
+  const [idvId, setIdvId] = React.useState<string | null>(null);
+  const [verifying, setVerifying] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const ready = name.trim() && businessNo.trim() && file;
+  const ready =
+    name.trim() && businessNo.trim() && repName.trim() && openDate.trim() && file;
+
+  async function verifyRep() {
+    setVerifying(true);
+    setError(null);
+    try {
+      const id = await verifyRepresentative();
+      if (id) setIdvId(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "본인인증에 실패했습니다.");
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -245,8 +264,15 @@ function CreateOrgDialog({
     setBusy(true);
     setError(null);
     try {
-      await api.createOrganization(name.trim(), businessNo.trim(), file);
-      // 생성 직후엔 인증 심사중(pending) — 컨텍스트 전환 없이 목록만 갱신
+      await api.createOrganization({
+        name: name.trim(),
+        businessNo: businessNo.trim(),
+        repName: repName.trim(),
+        openDate: openDate.trim(),
+        document: file,
+        identityVerificationId: idvId ?? undefined,
+      });
+      // 본인인증 통과면 즉시 인증완료, 아니면 심사중(pending) — 목록 갱신
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "회사 생성에 실패했습니다.");
@@ -263,7 +289,8 @@ function CreateOrgDialog({
           </div>
           <DialogTitle>회사 만들기</DialogTitle>
           <DialogDescription>
-            사업자 정보를 확인한 뒤 사용할 수 있어요. 사업자등록증을 첨부하면 관리자 심사 후 인증됩니다.
+            국세청 진위확인 + 대표자 본인인증으로 회사를 인증합니다. 본인인증 시 즉시,
+            서류(사업자등록증)만 제출하면 관리자 심사 후 인증됩니다.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={create} className="space-y-3">
@@ -287,6 +314,49 @@ function CreateOrgDialog({
               className={INPUT_CLS}
             />
           </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="대표자명">
+              <input
+                value={repName}
+                onChange={(e) => setRepName(e.target.value)}
+                placeholder="홍길동"
+                required
+                className={INPUT_CLS}
+              />
+            </Field>
+            <Field label="개업일자">
+              <input
+                value={openDate}
+                onChange={(e) => setOpenDate(e.target.value)}
+                placeholder="YYYYMMDD"
+                inputMode="numeric"
+                required
+                className={INPUT_CLS}
+              />
+            </Field>
+          </div>
+
+          {identityConfigured && (
+            <button
+              type="button"
+              onClick={verifyRep}
+              disabled={verifying || !!idvId}
+              className={cn(
+                "flex w-full items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-colors",
+                idvId
+                  ? "border-success/40 bg-success-subtle text-success-foreground"
+                  : "border-border hover:bg-muted"
+              )}
+            >
+              {verifying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : idvId ? (
+                <Check className="size-4" />
+              ) : null}
+              {idvId ? "대표자 본인인증 완료" : "대표자 본인인증"}
+            </button>
+          )}
+
           <Field label="사업자등록증">
             <input
               type="file"

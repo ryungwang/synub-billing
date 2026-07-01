@@ -53,6 +53,45 @@ public class BusinessVerifier {
         return check == (d.charAt(9) - '0');
     }
 
+    /** apiKey(국세청) 설정 여부 — 실서버 검증 가능 여부. */
+    public boolean apiEnabled() {
+        return cfg.apiKey() != null && !cfg.apiKey().isBlank();
+    }
+
+    /**
+     * 국세청 진위확인 — 사업자번호 + 대표자명 + 개업일자(YYYYMMDD)가 실제 등록과 일치하는지.
+     * apiKey 미설정이면 생략(true). 일치=valid "01".
+     */
+    public boolean verifyAuthenticity(String bizNo, String openDate, String repName) {
+        if (!apiEnabled()) return true;
+        String d = normalize(bizNo);
+        try {
+            String url = cfg.validateApiUrl() + "?serviceKey="
+                    + URLEncoder.encode(cfg.apiKey(), StandardCharsets.UTF_8);
+            Map<String, Object> biz = Map.of("b_no", d, "start_dt", openDate == null ? "" : openDate,
+                    "p_nm", repName == null ? "" : repName);
+            String body = json.writeValueAsString(Map.of("businesses", List.of(biz)));
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() / 100 != 2) {
+                log.warn("사업자 진위확인 HTTP {}", res.statusCode());
+                return false; // 진위확인은 실패 시 fail-closed(도용 방지)
+            }
+            JsonNode data = json.readTree(res.body()).path("data");
+            if (data.isArray() && !data.isEmpty()) {
+                return "01".equals(data.get(0).path("valid").asText(""));
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("사업자 진위확인 오류: {}", e.getMessage());
+            return false;
+        }
+    }
+
     /** 국세청 상태조회로 '계속사업자'인지 확인. apiKey 미설정이면 생략(형식검증만으로 통과). */
     public boolean isActiveBusiness(String bizNo) {
         if (cfg.apiKey() == null || cfg.apiKey().isBlank()) {

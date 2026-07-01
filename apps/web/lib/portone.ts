@@ -3,8 +3,26 @@
 
 const STORE_ID = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
 const CHANNEL_KEY = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
+const IDENTITY_CHANNEL_KEY = process.env.NEXT_PUBLIC_PORTONE_IDENTITY_CHANNEL_KEY;
 
 export const portoneConfigured = Boolean(STORE_ID && CHANNEL_KEY);
+export const identityConfigured = Boolean(STORE_ID && IDENTITY_CHANNEL_KEY);
+
+/** 대표자 본인인증(통신사 PASS). 성공 시 identityVerificationId 반환(서버가 PortOne로 검증). */
+export async function verifyRepresentative(): Promise<string | null> {
+  if (!STORE_ID || !IDENTITY_CHANNEL_KEY) return null;
+  const PortOne = (await import("@portone/browser-sdk/v2")).default;
+  const id = `synub-idv-${Date.now()}`;
+  const res = await PortOne.requestIdentityVerification({
+    storeId: STORE_ID,
+    identityVerificationId: id,
+    channelKey: IDENTITY_CHANNEL_KEY,
+  });
+  if (!res || res.code != null) {
+    throw new Error(res?.message ?? "본인인증에 실패했습니다.");
+  }
+  return res.identityVerificationId;
+}
 
 export interface IssuedBillingKey {
   billingKey: string;

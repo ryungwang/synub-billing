@@ -27,17 +27,20 @@ public class OrganizationService {
     private final MembershipRepository memberships;
     private final CustomerRepository customers;
     private final BusinessVerifier businessVerifier;
+    private final IdentityVerifier identityVerifier;
     private final StorageService storage;
     private final CurrentUser currentUser;
     private final CurrentTenant tenant;
 
     public OrganizationService(OrganizationRepository organizations, MembershipRepository memberships,
                                CustomerRepository customers, BusinessVerifier businessVerifier,
-                               StorageService storage, CurrentUser currentUser, CurrentTenant tenant) {
+                               IdentityVerifier identityVerifier, StorageService storage,
+                               CurrentUser currentUser, CurrentTenant tenant) {
         this.organizations = organizations;
         this.memberships = memberships;
         this.customers = customers;
         this.businessVerifier = businessVerifier;
+        this.identityVerifier = identityVerifier;
         this.storage = storage;
         this.currentUser = currentUser;
         this.tenant = tenant;
@@ -49,7 +52,8 @@ public class OrganizationService {
      * 소유권은 관리자 심사(approve)로 확정 — 생성 시점엔 pending, 인증 전 결제 불가.
      */
     @Transactional
-    public OrgDto create(String name, String businessNo, byte[] docBytes, String docFilename) {
+    public OrgDto create(String name, String businessNo, String repName, String openDate,
+                         String identityVerificationId, byte[] docBytes, String docFilename) {
         String trimmed = name == null ? "" : name.trim();
         if (trimmed.isEmpty()) throw new BadRequestException("회사 이름을 입력하세요.");
         if (trimmed.length() > 80) throw new BadRequestException("회사 이름은 80자 이하여야 합니다.");
@@ -61,9 +65,25 @@ public class OrganizationService {
         if (organizations.existsByBusinessNo(bizNo)) {
             throw new BadRequestException("이미 등록된 사업자등록번호입니다.");
         }
+        String rep = repName == null ? "" : repName.trim();
+        if (rep.isEmpty()) throw new BadRequestException("대표자명을 입력하세요.");
+        String openDt = openDate == null ? "" : openDate.replaceAll("[^0-9]", "");
+
+        // 국세청 진위확인: 번호+대표자+개업일 일치 (apiKey 있을 때). 실패 시 등록 거부.
+        if (!businessVerifier.verifyAuthenticity(bizNo, openDt, rep)) {
+            throw new BadRequestException("국세청 진위확인에 실패했습니다. 사업자번호·대표자명·개업일자를 확인하세요.");
+        }
         if (!businessVerifier.isActiveBusiness(bizNo)) {
             throw new BadRequestException("휴업·폐업 상태이거나 확인되지 않는 사업자입니다.");
         }
+
+        // 대표자 본인인증(있으면): 인증 실명이 대표자명과 일치해야 함. 불일치 시 거부(도용 방지).
+        Optional<String> verifiedName = identityVerifier.verifiedName(identityVerificationId);
+        if (verifiedName.isPresent()
+                && !squash(verifiedName.get()).equals(squash(rep))) {
+            throw new BadRequestException("본인인증 이름과 대표자명이 일치하지 않습니다.");
+        }
+
         if (docBytes == null || docBytes.length == 0) {
             throw new BadRequestException("사업자등록증을 첨부하세요.");
         }
@@ -71,10 +91,18 @@ public class OrganizationService {
         Customer me = currentUser.resolve();
         String docKey = storage.store(docBytes, docFilename);
         Organization org = new Organization(tenant.companyId(), trimmed);
-        org.submitBusiness(bizNo, docKey);
+        org.submitBusiness(bizNo, rep, openDt, docKey);
+        // 대표자 본인인증 통과 → 소유권 자동 확정(즉시 인증완료). 없으면 pending(관리자 서류 심사).
+        if (verifiedName.isPresent()) {
+            org.confirmByRepresentative(java.time.Instant.now());
+        }
         organizations.save(org);
         memberships.save(new Membership(org.getId(), me.getId(), Membership.OWNER));
         return toOrgDto(org, Membership.OWNER);
+    }
+
+    private String squash(String s) {
+        return s == null ? "" : s.replaceAll("\\s", "");
     }
 
     /** 내가 속한 조직 목록(+내 역할·인증상태). */

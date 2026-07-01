@@ -211,11 +211,22 @@ export const api = {
   dashboard: () => http<ApiDashboard>("/dashboard"),
   organizations: () => http<ApiOrg[]>("/organizations"),
   // 회사 생성 + 사업자 인증 서류(멀티파트). Content-Type 은 브라우저가 boundary 포함해 설정.
-  createOrganization: async (name: string, businessNo: string, document: File) => {
+  createOrganization: async (input: {
+    name: string;
+    businessNo: string;
+    repName: string;
+    openDate: string;
+    document: File;
+    identityVerificationId?: string;
+  }) => {
     const fd = new FormData();
-    fd.append("name", name);
-    fd.append("businessNo", businessNo);
-    fd.append("document", document);
+    fd.append("name", input.name);
+    fd.append("businessNo", input.businessNo);
+    fd.append("repName", input.repName);
+    fd.append("openDate", input.openDate);
+    fd.append("document", input.document);
+    if (input.identityVerificationId)
+      fd.append("identityVerificationId", input.identityVerificationId);
     const token = getToken();
     const res = await fetch(`${BASE}/organizations`, {
       method: "POST",

@@ -49,9 +49,12 @@ app:
     # 토스페이먼츠 채널(synub-toss). 이니시스에서 전환.
     channel-key: ${PORTONE_CHANNEL_KEY:channel-key-b52b5071-01d9-4e6a-a352-a273a8b2e596}
     api-secret: ${PORTONE_API_SECRET:}
+    # 대표자 본인인증용 채널(별도). 없으면 본인인증 단계 생략(서류+관리자 심사로 대체).
+    identity-channel-key: ${PORTONE_IDENTITY_CHANNEL_KEY:}
   business:
-    # 국세청 사업자등록 상태조회(공공데이터포털). api-key 없으면 형식·체크섬만 검증(로컬).
+    # 국세청(공공데이터포털). api-key 없으면 형식·체크섬만 검증(로컬).
     status-api-url: ${BUSINESS_STATUS_API_URL:https://api.odcloud.kr/api/nts-businessman/v1/status}
+    validate-api-url: ${BUSINESS_VALIDATE_API_URL:https://api.odcloud.kr/api/nts-businessman/v1/validate}
     api-key: ${BUSINESS_API_KEY:}
   storage:
     # 사업자등록증 등 업로드 파일 저장 경로(로컬). 운영은 S3 어댑터.

@@ -35,8 +35,11 @@ public class OrganizationController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrgDto create(@RequestParam String name,
                          @RequestParam String businessNo,
+                         @RequestParam String repName,
+                         @RequestParam(required = false) String openDate,
+                         @RequestParam(required = false) String identityVerificationId,
                          @RequestPart("document") MultipartFile document) throws IOException {
-        return organizations.create(name, businessNo,
+        return organizations.create(name, businessNo, repName, openDate, identityVerificationId,
                 document.getBytes(), document.getOriginalFilename());
     }
 
