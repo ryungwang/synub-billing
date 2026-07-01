@@ -299,7 +299,7 @@ function AddCardDialog({
           <ShieldCheck className="mx-auto size-10 text-primary" />
           <p className="mt-3 text-sm font-semibold">포트원 결제창으로 이동</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            KG이니시스를 통해 카드 등록·빌링키 발급이 진행됩니다.
+            토스페이먼츠를 통해 카드 등록·빌링키 발급이 진행됩니다.
           </p>
         </div>
         {error && (

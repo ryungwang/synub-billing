@@ -29,7 +29,7 @@ export async function issueBillingKey(
     billingKeyMethod: "CARD",
     issueId,
     issueName: "Synub 정기결제 카드 등록",
-    // KG이니시스 V2 빌링키 발급은 구매자 이메일이 필수
+    // 포트원 V2 빌링키 발급 — 구매자 이메일/이름/전화 전달(토스페이먼츠 채널)
     customer: {
       email: customer.email,
       fullName: customer.fullName,

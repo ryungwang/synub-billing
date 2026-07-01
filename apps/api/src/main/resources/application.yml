@@ -38,11 +38,12 @@ app:
     timeout-ms: 2000
     max-attempts: 3
   portone:
-    # enabled=true 로 바꾸고 store-id/api-secret 채우면 실연동(KG이니시스 테스트 채널)으로 전환.
+    # enabled=true 로 바꾸고 store-id/api-secret 채우면 실연동(포트원 V2 · 토스페이먼츠 테스트 채널)으로 전환.
     enabled: ${PORTONE_ENABLED:false}
     api-base: "https://api.portone.io"
     store-id: ${PORTONE_STORE_ID:}
-    channel-key: ${PORTONE_CHANNEL_KEY:channel-key-c1ee86db-981d-4acd-b3df-4a2a4ac78853}
+    # 토스페이먼츠 채널(synub-toss). 이니시스에서 전환.
+    channel-key: ${PORTONE_CHANNEL_KEY:channel-key-b52b5071-01d9-4e6a-a352-a273a8b2e596}
     api-secret: ${PORTONE_API_SECRET:}
   sso:
     # 통합계정(SSO) 토큰 검증. mode=jwks(SSO 공개키, 기본) | hs256(공유키).

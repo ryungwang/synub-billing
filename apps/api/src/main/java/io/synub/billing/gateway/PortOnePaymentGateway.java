@@ -19,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 포트원 V2 + KG이니시스(inicis_v2) 실연동 게이트웨이 (PRD §7).
+ * 포트원 V2 실연동 게이트웨이 (PRD §7). 채널은 app.portone.channel-key 로 결정(현재 토스페이먼츠).
  * 빌링키 단건 결제: POST /payments/{paymentId}/billing-key, Authorization: PortOne {API_SECRET}.
  * app.portone.enabled=true 일 때만 활성.
  */
