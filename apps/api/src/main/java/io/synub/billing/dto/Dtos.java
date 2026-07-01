@@ -108,4 +108,11 @@ public final class Dtos {
                               String verifyStatus, String rejectReason) {}
 
     public record RejectOrgRequest(String reason) {}
+
+    /** 제품→빌링 조직 멤버 프로비저닝(예: 그룹웨어 직원 추가). role 미지정 시 member. */
+    public record ProvisionMemberRequest(
+            @NotBlank String orgCode, @NotBlank String externalId,
+            String email, String name, String role) {}
+
+    public record OrgMemberDto(String orgCode, String externalId, String role, boolean created) {}
 }

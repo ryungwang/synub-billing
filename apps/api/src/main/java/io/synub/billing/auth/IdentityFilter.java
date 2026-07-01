@@ -37,7 +37,7 @@ public class IdentityFilter extends OncePerRequestFilter {
 
     /** 사용자 신원이 없어도 되는 경로(서버간 호출·웹훅·헬스체크). */
     private static final String[] PUBLIC_PREFIXES = {"/internal", "/webhooks", "/actuator",
-            "/api/entitlements", "/api/usage"};
+            "/api/entitlements", "/api/usage", "/api/orgs"};
 
     private final TokenVerifier verifier;
     private final AppProperties.Sso cfg;
