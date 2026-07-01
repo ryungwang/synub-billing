@@ -109,8 +109,8 @@ public class BusinessVerifier {
                     .build();
             HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() / 100 != 2) {
-                log.warn("사업자 상태조회 HTTP {} — 통과 처리(체크섬 유효)", res.statusCode());
-                return true; // 장애 시 fail-open(체크섬은 이미 통과)
+                log.warn("사업자 상태조회 HTTP {} — 거부(fail-closed)", res.statusCode());
+                return false; // 키를 켜 둔 이상 장애도 통과시키지 않음(민감 프로젝트)
             }
             JsonNode data = json.readTree(res.body()).path("data");
             if (data.isArray() && !data.isEmpty()) {
@@ -118,10 +118,10 @@ public class BusinessVerifier {
                 String code = data.get(0).path("b_stat_cd").asText("");
                 return "계속사업자".equals(stat) || "01".equals(code);
             }
-            return true;
+            return false;
         } catch (Exception e) {
-            log.warn("사업자 상태조회 오류: {} — 통과 처리", e.getMessage());
-            return true;
+            log.warn("사업자 상태조회 오류: {} — 거부(fail-closed)", e.getMessage());
+            return false;
         }
     }
 }

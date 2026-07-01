@@ -2,6 +2,7 @@ package io.synub.billing.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.synub.billing.domain.Payment;
+import io.synub.billing.gateway.PaymentGateway;
 import io.synub.billing.gateway.PortoneWebhookVerifier;
 import io.synub.billing.repo.PaymentRepository;
 import org.slf4j.Logger;
@@ -28,12 +29,14 @@ public class PgWebhookController {
 
     private final PaymentRepository payments;
     private final PortoneWebhookVerifier verifier;
+    private final PaymentGateway gateway;
     private final ObjectMapper json;
 
     public PgWebhookController(PaymentRepository payments, PortoneWebhookVerifier verifier,
-                              ObjectMapper json) {
+                              PaymentGateway gateway, ObjectMapper json) {
         this.payments = payments;
         this.verifier = verifier;
+        this.gateway = gateway;
         this.json = json;
     }
 
@@ -65,6 +68,16 @@ public class PgWebhookController {
 
         payments.findByPgPaymentId(pgPaymentId).ifPresentOrElse(p -> {
             String mapped = mapStatus(pgStatus);
+            // 금액 대조(PG 조회 지원 시): 우리 기록 금액과 다르면 paid 반영 보류(위조·오류 방어)
+            if ("paid".equals(mapped)) {
+                var info = gateway.lookup(pgPaymentId);
+                if (info.isPresent() && info.get().amount() >= 0
+                        && info.get().amount() != p.getAmount()) {
+                    log.warn("PG 웹훅 금액 불일치: payment={} local={} pg={} — paid 반영 보류",
+                            pgPaymentId, p.getAmount(), info.get().amount());
+                    return;
+                }
+            }
             p.setStatus(mapped);
             if ("paid".equals(mapped) && p.getPaidAt() == null) {
                 p.setPaidAt(Instant.now());

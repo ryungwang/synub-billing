@@ -75,7 +75,7 @@ public class SubscriptionService {
         PaymentGateway.ChargeResult charge = gateway.charge(new PaymentGateway.ChargeRequest(
                 key.getPgBillingKey(), amount, orderName, paymentId,
                 me.getExternalId(), me.getEmail(),
-                "010-0000-0000")); // TODO: 빌링키 발급 시 고객 전화번호 수집
+                me.phoneForBilling()));
         if (!charge.success()) {
             throw new BadRequestException("첫 결제에 실패했습니다: " + charge.failureReason());
         }
@@ -162,7 +162,7 @@ public class SubscriptionService {
             String orderName = plan.getProduct().getName() + " 좌석 추가 " + seatDelta + "석(잔여기간 정산)";
             PaymentGateway.ChargeResult charge = gateway.charge(new PaymentGateway.ChargeRequest(
                     sub.getBillingKey().getPgBillingKey(), (int) prorated, orderName, paymentId,
-                    me.getExternalId(), me.getEmail(), "010-0000-0000"));
+                    me.getExternalId(), me.getEmail(), me.phoneForBilling()));
             if (!charge.success()) {
                 throw new BadRequestException("좌석 추가 결제에 실패했습니다: " + charge.failureReason());
             }

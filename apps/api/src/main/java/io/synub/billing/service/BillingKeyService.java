@@ -45,6 +45,10 @@ public class BillingKeyService {
     public CardDto register(RegisterBillingKeyRequest req) {
         Customer me = currentUser.resolve();
         Owner owner = scope.writeOwner();
+        // PG 청구에 쓸 전화번호 수집(빌링키 발급 시 입력받음)
+        if (req.phone() != null && !req.phone().isBlank()) {
+            me.setPhone(req.phone().replaceAll("[^0-9]", ""));
+        }
         List<BillingKey> existing = keys.findByOwnerTypeAndOwnerIdAndStatusOrderByCreatedAtAsc(
                 owner.type(), owner.id(), "active");
         boolean makePrimary = Boolean.TRUE.equals(req.primary()) || existing.isEmpty();

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { api, type ApiCard } from "@/lib/api";
 import { issueBillingKey, portoneConfigured } from "@/lib/portone";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const BRAND_COLOR: Record<string, string> = {
@@ -238,24 +239,35 @@ function AddCardDialog({
   trigger?: React.ReactNode;
   onAdded: () => void;
 }) {
+  const { user } = useAuth();
   const [open, setOpen] = React.useState(false);
+  const [phone, setPhone] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const phoneDigits = phone.replace(/[^0-9]/g, "");
+
   async function register() {
+    if (portoneConfigured && phoneDigits.length < 10) {
+      setError("휴대폰 번호를 입력하세요. (PG 결제에 필요)");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       if (portoneConfigured) {
-        // 실연동: 포트원 결제창에서 카드 빌링키 발급 → 백엔드에 등록
-        // (고객 정보는 추후 로그인 사용자에서 주입 — 현재는 데모 계정)
+        // 실연동: 포트원 결제창에서 카드 빌링키 발급 → 백엔드에 등록(로그인 사용자 정보 사용)
         const issued = await issueBillingKey({
-          email: "deerkrg@synub.io",
-          fullName: "김신업",
-          phoneNumber: "010-0000-0000",
+          email: user?.email ?? "",
+          fullName: user?.name,
+          phoneNumber: phoneDigits,
         });
         if (!issued) throw new Error("포트원 설정이 올바르지 않습니다.");
-        await api.registerCard({ pgBillingKey: issued.billingKey, primary: false });
+        await api.registerCard({
+          pgBillingKey: issued.billingKey,
+          phone: phoneDigits,
+          primary: false,
+        });
       } else {
         // 데모 폴백: 포트원 미설정 시 임의 카드 등록
         const companies = ["삼성카드", "KB국민카드", "롯데카드"];
@@ -266,6 +278,7 @@ function AddCardDialog({
           cardCompany: company,
           cardLast4: last4,
           cardType: "신용",
+          phone: phoneDigits || undefined,
           primary: false,
         });
       }
@@ -302,6 +315,19 @@ function AddCardDialog({
             토스페이먼츠를 통해 카드 등록·빌링키 발급이 진행됩니다.
           </p>
         </div>
+        <label className="block">
+          <span className="mb-1 block text-[13px] font-semibold">휴대폰 번호</span>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="01012345678"
+            inputMode="numeric"
+            className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            정기결제 청구 시 PG사에 전달됩니다.
+          </span>
+        </label>
         {error && (
           <div className="flex items-center gap-2 rounded-xl bg-destructive-subtle px-3 py-2.5 text-sm font-medium text-destructive-subtle-foreground">
             <AlertCircle className="size-4 shrink-0" />

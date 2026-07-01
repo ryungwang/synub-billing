@@ -62,7 +62,7 @@ public final class Dtos {
     // ---- 요청 바디 ----
     public record RegisterBillingKeyRequest(
             @NotNull String pgBillingKey, String cardCompany,
-            String cardLast4, String cardType, Boolean primary) {}
+            String cardLast4, String cardType, Boolean primary, String phone) {}
 
     public record CreateSubscriptionRequest(
             @NotNull Long planId, @NotNull Long billingKeyId, Integer seats) {}

@@ -90,7 +90,7 @@ public class BillingEngine {
             PaymentGateway.ChargeResult result = gateway.charge(new PaymentGateway.ChargeRequest(
                     sub.getBillingKey().getPgBillingKey(), amount, orderName, paymentId,
                     sub.getCustomer().getExternalId(), sub.getCustomer().getEmail(),
-                    "010-0000-0000")); // TODO: 고객 전화번호 수집 후 전달
+                    sub.getCustomer().phoneForBilling()));
             success = result.success();
             pgPaymentId = result.pgPaymentId();
             failureReason = result.failureReason();

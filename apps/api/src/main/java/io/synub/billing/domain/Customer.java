@@ -19,6 +19,8 @@ public class Customer {
 
     private String email;
 
+    private String phone;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
@@ -30,9 +32,17 @@ public class Customer {
         this.email = email;
     }
 
+    public void setPhone(String phone) { this.phone = phone; }
+
+    /** PG 청구에 쓸 전화번호. 미수집이면 안전한 기본값(Mock/일부 채널 허용). */
+    public String phoneForBilling() {
+        return phone == null || phone.isBlank() ? "010-0000-0000" : phone;
+    }
+
     public Long getId() { return id; }
     public Long getCompanyId() { return companyId; }
     public String getExternalId() { return externalId; }
     public String getEmail() { return email; }
+    public String getPhone() { return phone; }
     public Instant getCreatedAt() { return createdAt; }
 }

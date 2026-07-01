@@ -333,6 +333,7 @@ export const api = {
     cardCompany?: string;
     cardLast4?: string;
     cardType?: string;
+    phone?: string;
     primary?: boolean;
   }) =>
     http<ApiCard>("/billing/keys", {
