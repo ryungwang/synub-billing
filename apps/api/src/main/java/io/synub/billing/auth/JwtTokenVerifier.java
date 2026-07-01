@@ -87,7 +87,9 @@ public class JwtTokenVerifier implements TokenVerifier {
                 throw new AuthException("토큰에 sub(사용자 식별자)가 없습니다.");
             }
             String email = claims.getStringClaim("email");
-            return new Identity(sub, email, AuthContext.personal());
+            Boolean adminClaim = claims.getBooleanClaim("admin");
+            boolean admin = adminClaim != null && adminClaim;
+            return new Identity(sub, email, AuthContext.personal(), admin);
         } catch (AuthException e) {
             throw e;
         } catch (Exception e) {

@@ -87,4 +87,15 @@ public final class Dtos {
     public record CreateInvitationRequest(@NotBlank @Email String email, @NotBlank String role) {}
 
     public record ChangeRoleRequest(@NotBlank String role) {}
+
+    // ---- 관리자 콘솔 ----
+    public record AdminStatsDto(long activeSubscriptions, long customers, long organizations,
+                                long monthlyRevenue, long paidThisMonth) {}
+
+    public record AdminSubscriptionDto(Long id, String customerEmail, String ownerType,
+                                       String product, String plan, String status,
+                                       int amount, LocalDate nextBillingDate) {}
+
+    public record AdminPaymentDto(Long id, String customerEmail, String product,
+                                  int amount, String status, String date, String receiptNo) {}
 }

@@ -67,7 +67,7 @@ public class IdentityFilter extends OncePerRequestFilter {
                 identity = verifier.verify(token).withContext(context);
             } else if (cfg.devFallbackEnabled()) {
                 AuthContext context = AuthContext.parse(request.getHeader("X-Synub-Context"));
-                identity = new Identity(cfg.devExternalId(), cfg.devEmail(), context);
+                identity = new Identity(cfg.devExternalId(), cfg.devEmail(), context, false);
             }
         } catch (AuthException e) {
             if (!isPublic) {

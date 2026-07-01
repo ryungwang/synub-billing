@@ -36,6 +36,7 @@ public class AuthController {
         context.put("type", ctx.type().name().toLowerCase());
         context.put("orgId", ctx.orgId());
         body.put("context", context);
+        body.put("admin", id.admin());
         body.put("organizations", organizations.myOrganizations());
         return body;
     }

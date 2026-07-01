@@ -27,4 +27,13 @@ public class MockPaymentGateway implements PaymentGateway {
                 + "_" + seq.incrementAndGet();
         return ChargeResult.ok(id);
     }
+
+    @Override
+    public RefundResult refund(String pgPaymentId, int amount, String reason) {
+        // 목: 항상 성공. "fail_" pgPaymentId 는 강제 실패(검증용).
+        if (pgPaymentId != null && pgPaymentId.startsWith("fail_")) {
+            return RefundResult.fail("테스트 강제 환불 실패");
+        }
+        return RefundResult.ok();
+    }
 }

@@ -10,6 +10,7 @@ export interface AuthUser {
   email: string;
   name?: string;
   exp: number;
+  admin?: boolean;
 }
 
 const listeners = new Set<() => void>();
@@ -35,7 +36,13 @@ export function decode(token: string): AuthUser | null {
       .padEnd(part.length + ((4 - (part.length % 4)) % 4), "=");
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const json = JSON.parse(new TextDecoder().decode(bytes));
-    return { sub: json.sub, email: json.email, name: json.name, exp: json.exp };
+    return {
+      sub: json.sub,
+      email: json.email,
+      name: json.name,
+      exp: json.exp,
+      admin: json.admin === true,
+    };
   } catch {
     return null;
   }

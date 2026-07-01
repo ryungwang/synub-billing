@@ -9,6 +9,14 @@ public interface PaymentGateway {
     /** 빌링키로 즉시 청구. */
     ChargeResult charge(ChargeRequest req);
 
+    /** 결제 취소(환불). pgPaymentId 로 PG 결제건을 취소. */
+    RefundResult refund(String pgPaymentId, int amount, String reason);
+
+    record RefundResult(boolean success, String failureReason) {
+        public static RefundResult ok() { return new RefundResult(true, null); }
+        public static RefundResult fail(String reason) { return new RefundResult(false, reason); }
+    }
+
     /**
      * 청구 요청. KG이니시스는 customer 전화번호·이메일이 필수라 함께 전달.
      * idempotencyKey는 PG 결제건 ID(paymentId)로 사용 — 중복 청구 방지.

@@ -92,6 +92,42 @@ public class PortOnePaymentGateway implements PaymentGateway {
         }
     }
 
+    @Override
+    public RefundResult refund(String pgPaymentId, int amount, String reason) {
+        if (pgPaymentId == null || pgPaymentId.isBlank()) {
+            return RefundResult.fail("PG 결제건 ID 없음");
+        }
+        String url = cfg.apiBase() + "/payments/"
+                + URLEncoder.encode(pgPaymentId, StandardCharsets.UTF_8) + "/cancel";
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("storeId", cfg.storeId());
+        body.put("reason", reason != null ? reason : "관리자 환불");
+        // 전액 환불 시 amount 생략 가능하나 명시(부분환불 대비)
+        body.put("amount", amount);
+        try {
+            String payload = json.writeValueAsString(body);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(20))
+                    .header("Authorization", "PortOne " + cfg.apiSecret())
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> res = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() / 100 == 2) {
+                return RefundResult.ok();
+            }
+            JsonNode node = res.body() == null || res.body().isBlank() ? null : json.readTree(res.body());
+            String message = node != null && node.has("message")
+                    ? node.get("message").asText() : ("HTTP " + res.statusCode());
+            log.warn("포트원 환불 실패: {} ({})", message, res.statusCode());
+            return RefundResult.fail(message);
+        } catch (Exception e) {
+            log.error("포트원 환불 호출 오류: {}", e.toString());
+            return RefundResult.fail("PG 통신 오류: " + e.getMessage());
+        }
+    }
+
     private static String pickStatus(JsonNode node) {
         if (node == null) return null;
         if (node.has("status")) return node.get("status").asText();

@@ -10,10 +10,12 @@ import {
   CreditCard,
   ReceiptText,
   Users,
+  ShieldCheck,
   Menu,
   X,
   LifeBuoy,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -75,8 +77,15 @@ function NavLink({
   );
 }
 
+const ADMIN_GROUP: NavGroup = {
+  title: "운영",
+  items: [{ href: "/admin", label: "관리자", icon: ShieldCheck }],
+};
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const groups = user?.admin ? [...NAV, ADMIN_GROUP] : NAV;
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -95,7 +104,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-        {NAV.map((group) => (
+        {groups.map((group) => (
           <div key={group.title}>
             <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-sidebar-muted">
               {group.title}

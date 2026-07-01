@@ -16,6 +16,11 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     long countByBillingKeyIdAndStatusNot(Long billingKeyId, String status);
     long countByPlanProductIdAndStatus(Long productId, String status);
 
+    // 관리자 콘솔
+    List<Subscription> findAllByOrderByIdDesc();
+    List<Subscription> findByStatus(String status);
+    long countByStatus(String status);
+
     // 소유 스코프(개인/조직) 기준 조회
     List<Subscription> findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(String ownerType, Long ownerId);
     Optional<Subscription> findByIdAndOwnerTypeAndOwnerId(Long id, String ownerType, Long ownerId);

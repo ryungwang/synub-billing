@@ -54,6 +54,12 @@ public class CurrentUser {
         return id != null ? id.context() : AuthContext.personal();
     }
 
+    /** 플랫폼 관리자 여부(토큰 admin claim). */
+    public boolean isAdmin() {
+        Identity id = IdentityContext.current();
+        return id != null && id.admin();
+    }
+
     /**
      * 현재 고객. SSO 신규 사용자면 JIT provisioning 으로 자동 생성해 반환한다
      * (검증된 토큰이면 처음 보는 사용자라도 빌링 고객으로 확립).

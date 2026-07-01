@@ -166,6 +166,35 @@ export interface ApiInvitation {
   status: string;
 }
 
+export interface ApiAdminStats {
+  activeSubscriptions: number;
+  customers: number;
+  organizations: number;
+  monthlyRevenue: number;
+  paidThisMonth: number;
+}
+
+export interface ApiAdminSubscription {
+  id: number;
+  customerEmail: string;
+  ownerType: string;
+  product: string;
+  plan: string;
+  status: SubStatus;
+  amount: number;
+  nextBillingDate: string;
+}
+
+export interface ApiAdminPayment {
+  id: number;
+  customerEmail: string;
+  product: string;
+  amount: number;
+  status: PayStatus;
+  date: string;
+  receiptNo: string;
+}
+
 export const api = {
   products: () => http<ApiProduct[]>("/products"),
   dashboard: () => http<ApiDashboard>("/dashboard"),
@@ -203,6 +232,13 @@ export const api = {
     http<void>(`/invitations/${id}/accept`, { method: "POST" }),
   declineInvitation: (id: number) =>
     http<void>(`/invitations/${id}/decline`, { method: "POST" }),
+
+  // 관리자 콘솔
+  adminStats: () => http<ApiAdminStats>("/admin/stats"),
+  adminSubscriptions: () => http<ApiAdminSubscription[]>("/admin/subscriptions"),
+  adminPayments: () => http<ApiAdminPayment[]>("/admin/payments"),
+  adminRefund: (id: number) =>
+    http<ApiAdminPayment>(`/admin/payments/${id}/refund`, { method: "POST" }),
   subscriptions: () => http<ApiSubscription[]>("/subscriptions"),
   payments: () => http<ApiPayment[]>("/payments"),
   cards: () => http<ApiCard[]>("/billing/keys"),
