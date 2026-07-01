@@ -32,15 +32,17 @@ public class BillingEngine {
     private final PaymentGateway gateway;
     private final AppProperties props;
     private final SubscriptionWebhooks webhooks;
+    private final BillingNotifier notifier;
 
     public BillingEngine(SubscriptionRepository subscriptions, PaymentRepository payments,
                          PaymentGateway gateway, AppProperties props,
-                         SubscriptionWebhooks webhooks) {
+                         SubscriptionWebhooks webhooks, BillingNotifier notifier) {
         this.subscriptions = subscriptions;
         this.payments = payments;
         this.gateway = gateway;
         this.props = props;
         this.webhooks = webhooks;
+        this.notifier = notifier;
     }
 
     public record RunResult(int processed, int charged, int recovered,
@@ -95,6 +97,7 @@ public class BillingEngine {
 
             if (wasPastDue) {
                 webhooks.fire(sub, SubscriptionWebhooks.ACTIVATED);
+                notifier.recovered(sub);
                 return Outcome.RECOVERED;
             }
             return Outcome.CHARGED;
@@ -109,11 +112,13 @@ public class BillingEngine {
         if (attempt > props.billing().maxRetries()) {
             sub.setStatus("suspended");
             webhooks.fire(sub, SubscriptionWebhooks.SUSPENDED);
+            notifier.suspended(sub);
             return Outcome.SUSPENDED;
         }
         sub.setStatus("past_due");
         sub.setNextBillingDate(today.plusDays(props.billing().retryGapDays(attempt)));
         webhooks.fire(sub, SubscriptionWebhooks.PAYMENT_FAILED);
+        notifier.paymentFailed(sub);
         return Outcome.FAILED;
     }
 }
