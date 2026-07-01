@@ -232,6 +232,23 @@ private static final Map<String, UsageDto> USAGE = Map.of(
 - **직원 추가 흐름**: 제품에서 직원 추가 → (SSO 계정 프로비저닝 API로) SSO에 계정 생성 → 제품 member 레코드 생성(external_id + org_code + 제품 role) → 직원은 SSO로 로그인.
 - 표시용 이메일·이름은 캐시할 수 있으나 **원천은 SSO**다.
 
+#### SSO 계정 프로비저닝 API (직원 추가)
+
+제품이 직원 계정을 SSO에 만든다. **제품은 비밀번호를 만들거나 저장하지 않는다.**
+
+```
+POST {SSO}/provision/accounts
+Header: X-Service-Key: {서비스 키(SSO_PROVISION_KEY)}
+{ "email": "emp@corp.io", "name": "홍길동" }
+
+→ 201 { "externalId":"usr_...", "email":"emp@corp.io", "name":"홍길동",
+        "tempPassword":"Ab12Cd34Ef56", "created":true }
+```
+- `created:true` — 신규 생성. `tempPassword`를 직원에게 전달(직원은 이걸로 로그인).
+- `created:false` — 이미 SSO 계정이 있는 사람(예: 이미 synub 이용자) → 기존 계정 연결, `tempPassword:null`.
+- 멱등: 같은 이메일 재요청은 항상 기존 계정 반환. 서비스 키 없으면 403.
+- 제품은 반환된 `externalId`로 자사 member 생성(비번 저장 금지).
+
 ---
 
 ### ① Entitlements 조회 API — 제품이 빌링에게 물어봄 (pull)
