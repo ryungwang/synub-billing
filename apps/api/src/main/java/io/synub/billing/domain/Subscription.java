@@ -21,7 +21,7 @@ public class Subscription {
     private Plan plan;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "billing_key_id", nullable = false)
+    @JoinColumn(name = "billing_key_id")   // 무상(complimentary) 구독은 결제수단 없음(null)
     private BillingKey billingKey;
 
     private String status;
@@ -49,6 +49,10 @@ public class Subscription {
     @Column(name = "credit_balance", nullable = false)
     private int creditBalance = 0;
 
+    /** 무상 구독(개발사 등) — 청구 제외, billing_key 없음. */
+    @Column(nullable = false)
+    private boolean complimentary = false;
+
     /** 소유 스코프: 'customer' | 'organization'. 기본은 생성 고객 개인 소유. */
     @Column(name = "owner_type", nullable = false)
     private String ownerType;
@@ -74,6 +78,25 @@ public class Subscription {
         this.ownerType = "customer";
         this.ownerId = customer.getId();
     }
+
+    /** 무상 구독(개발사 등) — 결제수단 없이 즉시 active. owner는 서비스에서 org로 설정. */
+    public static Subscription complimentary(Customer customer, Plan plan,
+                                             Instant startedAt, LocalDate nextBillingDate) {
+        Subscription s = new Subscription();
+        s.customer = customer;
+        s.plan = plan;
+        s.billingKey = null;
+        s.status = "active";
+        s.startedAt = startedAt;
+        s.nextBillingDate = nextBillingDate;
+        s.cancelAtPeriodEnd = false;
+        s.complimentary = true;
+        s.ownerType = "customer";
+        s.ownerId = customer.getId();
+        return s;
+    }
+
+    public boolean isComplimentary() { return complimentary; }
 
     public void setOwner(String ownerType, Long ownerId) {
         this.ownerType = ownerType;

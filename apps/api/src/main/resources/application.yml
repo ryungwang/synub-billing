@@ -30,6 +30,8 @@ server:
   port: 8088
 
 app:
+  # 연동 규칙: 개발사(운영사) org 코드 — 등록된 모든 제품의 최고 플랜을 무상 자동 구독(기동 시). 빈값이면 비활성.
+  developer-org-code: ${DEVELOPER_ORG_CODE:SH-SYNUBGROUP}
   cors:
     allowed-origins: "http://localhost:3100,http://localhost:3000"
   billing:

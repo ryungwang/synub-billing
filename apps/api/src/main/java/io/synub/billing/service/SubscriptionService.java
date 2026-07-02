@@ -109,6 +109,9 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionDto cancel(Long id) {
         Subscription sub = findOwned(id);
+        if (sub.isComplimentary()) {
+            throw new BadRequestException("개발사 무상 구독은 해지할 수 없습니다.");
+        }
         if ("canceled".equals(sub.getStatus())) {
             throw new BadRequestException("이미 해지된 구독입니다.");
         }
@@ -123,6 +126,9 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionDto changePlan(Long id, ChangePlanRequest req) {
         Subscription sub = findOwned(id);
+        if (sub.isComplimentary()) {
+            throw new BadRequestException("개발사 무상 구독은 변경할 수 없습니다.");
+        }
         Plan newPlan = plans.findById(req.planId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
         sub.setPlan(newPlan);
@@ -137,6 +143,9 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionDto changeSeats(Long id, int newSeats) {
         Subscription sub = findOwned(id);
+        if (sub.isComplimentary()) {
+            throw new BadRequestException("개발사 무상 구독은 변경할 수 없습니다.");
+        }
         Plan plan = sub.getPlan();
         if (!plan.isPerSeat()) {
             throw new BadRequestException("인원당 과금 구독이 아닙니다.");

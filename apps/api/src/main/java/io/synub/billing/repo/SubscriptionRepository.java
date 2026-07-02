@@ -39,7 +39,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     @Query("""
         select s from Subscription s
-        where s.status in :statuses and s.nextBillingDate <= :date
+        where s.status in :statuses and s.nextBillingDate <= :date and s.complimentary = false
         order by s.nextBillingDate asc
         """)
     List<Subscription> findDue(

@@ -59,7 +59,7 @@ public class DtoMapper {
         BillingKey key = s.getBillingKey();
         LocalDate started = LocalDate.ofInstant(s.getStartedAt(), KST);
         int months = (int) Math.max(1, ChronoUnit.MONTHS.between(started, LocalDate.now(KST)) + 1);
-        String card = key.getCardCompany() + " ····" + key.getCardLast4();
+        String card = key == null ? "무상(개발사)" : key.getCardCompany() + " ····" + key.getCardLast4();
         // 제품이 보고한 실사용량 우선, 없으면 데모 스탠드인 폴백
         UsageDto usage = usageRepo
                 .findByExternalIdAndServiceCode(s.getCustomer().getExternalId(), product.getServiceCode())
@@ -80,7 +80,8 @@ public class DtoMapper {
         var when = pay.getPaidAt() != null ? pay.getPaidAt() : pay.getCreatedAt();
         String date = LocalDateTime.ofInstant(when, KST)
                 .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        String method = s.getBillingKey().getCardCompany() + " ····" + s.getBillingKey().getCardLast4();
+        BillingKey payKey = s.getBillingKey();
+        String method = payKey == null ? "무상" : payKey.getCardCompany() + " ····" + payKey.getCardLast4();
         return new PaymentDto(pay.getId(), product.getServiceCode(), product.getName(),
                 plan.getName(), pay.getAmount(), pay.getStatus(), date, method,
                 pay.getReceiptNo() == null ? "—" : pay.getReceiptNo());
