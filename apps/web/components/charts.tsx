@@ -14,10 +14,20 @@ export type Slice = { name: string; value: number; color: string };
 const AXIS = "var(--muted-foreground)";
 const GRID = "var(--border)";
 
-/** 월별 매출 — 면적+선(단일 hue). 호버 크로스헤어+툴팁. */
+/** 월별 매출 — 면적+선(단일 hue). 호버 크로스헤어+툴팁. 컨테이너 실폭을 측정해 1:1로 그려 왜곡 없음. */
 export function AreaTrend({ data, height = 200 }: { data: Pt[]; height?: number }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [W, setW] = React.useState(720);
   const [hi, setHi] = React.useState<number | null>(null);
-  const W = 640;
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setW(Math.max(320, Math.round(e.contentRect.width)));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const H = height;
   const padL = 8, padR = 8, padT = 16, padB = 26;
   const iw = W - padL - padR, ih = H - padT - padB;
@@ -30,8 +40,8 @@ export function AreaTrend({ data, height = 200 }: { data: Pt[]; height?: number 
   const area = `${line} L${x(n - 1)},${padT + ih} L${x(0)},${padT + ih} Z`;
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }} preserveAspectRatio="none"
+    <div ref={ref} className="relative w-full">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}
         onMouseLeave={() => setHi(null)}
         onMouseMove={(e) => {
           const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
