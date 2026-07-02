@@ -11,6 +11,7 @@ import {
   ReceiptText,
   Users,
   ShieldCheck,
+  Package,
   Menu,
   X,
   LifeBuoy,
@@ -85,7 +86,13 @@ function NavLink({
 
 const ADMIN_GROUP: NavGroup = {
   title: "운영",
-  items: [{ href: "/admin", label: "관리자", icon: ShieldCheck }],
+  items: [
+    { href: "/admin", label: "대시보드", icon: LayoutDashboard },
+    { href: "/admin/subscriptions", label: "구독", icon: Repeat },
+    { href: "/admin/payments", label: "결제", icon: ReceiptText },
+    { href: "/admin/organizations", label: "회사 심사", icon: ShieldCheck },
+    { href: "/admin/products", label: "제품", icon: Package },
+  ],
 };
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -99,7 +106,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   if (user?.admin) groups.push(ADMIN_GROUP);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" || href === "/admin" ? pathname === href : pathname.startsWith(href);
 
   return (
     <div className="flex h-full flex-col">
