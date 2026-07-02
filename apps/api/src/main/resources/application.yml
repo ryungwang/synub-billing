@@ -2,10 +2,10 @@ spring:
   application:
     name: synub-billing-api
   datasource:
-    # 공용 로컬 Postgres(5432) — synub 프로젝트 DB들이 모여있는 기존 인스턴스. 전용 컨테이너 안 씀.
-    url: jdbc:postgresql://localhost:5432/synub_billing
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:deer}
+    # 공용 로컬 Postgres(5432). env 이름은 Spring 표준(SPRING_DATASOURCE_*) — sso/office/공용 .env와 통일.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/synub_billing}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:deer}
   jpa:
     open-in-view: false
     hibernate:

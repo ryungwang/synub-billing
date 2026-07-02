@@ -1,11 +1,13 @@
 # prod 프로필 — 시크릿은 디폴트 금지(${ENV}), 공유 db의 앱 전용 DB+스키마.
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    # env 이름은 Spring 표준(SPRING_DATASOURCE_*) — 공용 .env(sso/office와 공유)와 통일.
+    # URL은 시크릿 아님 → 공용 postgres(compose 서비스 db)의 synub_billing 고정 기본값, 유저/비번만 .env.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/synub_billing}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
-      connection-init-sql: SET search_path TO billing
+      connection-init-sql: ${SPRING_DATASOURCE_INIT_SQL:SET search_path TO billing}
   jpa:
     open-in-view: false
     hibernate:

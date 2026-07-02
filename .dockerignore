@@ -1,0 +1,9 @@
+**/build/
+**/.gradle/
+.git/
+.github/
+**/node_modules/
+apps/web/
+docs/
+.idea/
+*.iml
