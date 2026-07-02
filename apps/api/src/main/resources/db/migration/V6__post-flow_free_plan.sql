@@ -6,6 +6,6 @@
 SELECT setval(pg_get_serial_sequence('plan', 'id'), (SELECT MAX(id) FROM plan));
 
 INSERT INTO plan (product_id, plan_code, name, tagline, amount, billing_cycle, features, is_highlight, sort_order) VALUES
- ((SELECT id FROM product WHERE service_code = 'threads'),
+ ((SELECT id FROM product WHERE service_code = 'post-flow'),
   'free', 'Free', '무료 체험', 0, 'monthly',
   '["총 10개 생성","기본 기능 체험"]'::jsonb, false, 0);
