@@ -164,6 +164,37 @@ export interface ApiAdminOrg {
   rejectReason: string | null;
 }
 
+// 관리자 제품 메타(가격/플랜 제외 — 그건 마이그레이션 전용)
+export interface ApiAdminProduct {
+  id: number;
+  serviceCode: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  domainUrl: string | null;
+  demoUrl: string | null;
+  webhookUrl: string | null;
+  onboardingUrl: string | null;
+  sortOrder: number;
+  orgOnly: boolean;
+  status: string;
+  planCount: number;
+}
+
+export interface ProductMetaInput {
+  serviceCode?: string; // 생성 시에만
+  name: string;
+  category?: string | null;
+  description?: string | null;
+  domainUrl?: string | null;
+  demoUrl?: string | null;
+  webhookUrl?: string | null;
+  onboardingUrl?: string | null;
+  sortOrder?: number;
+  orgOnly?: boolean;
+  status?: string;
+}
+
 export interface ApiMember {
   customerId: number;
   externalId: string;
@@ -293,6 +324,18 @@ export const api = {
     http<void>(`/admin/organizations/${id}/reject`, {
       method: "POST",
       body: JSON.stringify({ reason }),
+    }),
+  // 제품 메타 관리(가격/플랜은 마이그레이션 전용)
+  adminProducts: () => http<ApiAdminProduct[]>("/admin/products"),
+  adminCreateProduct: (req: ProductMetaInput) =>
+    http<ApiAdminProduct>("/admin/products", {
+      method: "POST",
+      body: JSON.stringify(req),
+    }),
+  adminUpdateProduct: (id: number, req: ProductMetaInput) =>
+    http<ApiAdminProduct>(`/admin/products/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
     }),
   // 사업자등록증 서류를 토큰 인증으로 받아 blob URL 생성(새 탭 열람용)
   adminOrgDocumentUrl: async (id: number) => {

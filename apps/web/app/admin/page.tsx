@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { AdminProducts } from "@/components/admin-products";
 import {
   SubscriptionStatusBadge,
   PaymentStatusBadge,
@@ -248,6 +249,8 @@ export default function AdminPage() {
           )}
         />
       </Card>
+
+      <AdminProducts />
     </>
   );
 }

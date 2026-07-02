@@ -118,4 +118,15 @@ public final class Dtos {
 
     /** 그룹웨어 초기설정 핸드오프 링크(서명 포함). */
     public record HandoffDto(String url) {}
+
+    // ---- 관리자: 제품 메타 관리(가격/플랜은 마이그레이션 전용) ----
+    /** 관리자 콘솔 제품 목록(숨김 포함). 플랜 수만 노출, 가격은 다루지 않음. */
+    public record ProductAdminDto(Long id, String serviceCode, String name, String category,
+            String description, String domainUrl, String demoUrl, String webhookUrl,
+            String onboardingUrl, int sortOrder, boolean orgOnly, String status, int planCount) {}
+
+    /** 제품 메타 등록/수정 입력. serviceCode는 생성 시에만 사용(수정 시 무시). 가격/플랜 필드 없음. */
+    public record ProductMetaRequest(String serviceCode, String name, String category,
+            String description, String domainUrl, String demoUrl, String webhookUrl,
+            String onboardingUrl, Integer sortOrder, Boolean orgOnly, String status) {}
 }

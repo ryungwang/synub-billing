@@ -4,6 +4,8 @@ import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
 import io.synub.billing.dto.Dtos.AdminSubscriptionDto;
+import io.synub.billing.dto.Dtos.ProductAdminDto;
+import io.synub.billing.dto.Dtos.ProductMetaRequest;
 import io.synub.billing.dto.Dtos.RejectOrgRequest;
 import io.synub.billing.service.AdminService;
 import org.springframework.http.HttpStatus;
@@ -42,6 +44,22 @@ public class AdminController {
     @PostMapping("/payments/{id}/refund")
     public AdminPaymentDto refund(@PathVariable Long id) {
         return admin.refund(id);
+    }
+
+    // ---- 제품 메타 관리(가격/플랜은 마이그레이션 전용) ----
+    @GetMapping("/products")
+    public List<ProductAdminDto> products() {
+        return admin.products();
+    }
+
+    @PostMapping("/products")
+    public ProductAdminDto createProduct(@RequestBody ProductMetaRequest req) {
+        return admin.createProduct(req);
+    }
+
+    @PutMapping("/products/{id}")
+    public ProductAdminDto updateProduct(@PathVariable Long id, @RequestBody ProductMetaRequest req) {
+        return admin.updateProduct(id, req);
     }
 
     // ---- 회사 인증 심사 ----

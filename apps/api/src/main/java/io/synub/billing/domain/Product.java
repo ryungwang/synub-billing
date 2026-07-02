@@ -51,6 +51,39 @@ public class Product {
 
     protected Product() {}
 
+    /** 관리자 콘솔 신규 등록(메타만). service_code는 여기서만 설정(이후 불변). 플랜·가격은 마이그레이션으로 별도 추가. */
+    public Product(String serviceCode, String name, String category, String description,
+                   String domainUrl, String demoUrl, String webhookUrl, String onboardingUrl,
+                   int sortOrder, boolean orgOnly, String status) {
+        this.serviceCode = serviceCode;
+        this.name = name;
+        this.category = category;
+        this.description = description;
+        this.domainUrl = domainUrl;
+        this.demoUrl = demoUrl;
+        this.webhookUrl = webhookUrl;
+        this.onboardingUrl = onboardingUrl;
+        this.sortOrder = sortOrder;
+        this.orgOnly = orgOnly;
+        this.status = status;
+    }
+
+    /** 메타데이터 수정(관리자 콘솔). service_code·플랜·가격(돈)은 불변 — 마이그레이션으로만 통제. */
+    public void updateMeta(String name, String category, String description,
+                           String domainUrl, String demoUrl, String webhookUrl, String onboardingUrl,
+                           int sortOrder, boolean orgOnly, String status) {
+        this.name = name;
+        this.category = category;
+        this.description = description;
+        this.domainUrl = domainUrl;
+        this.demoUrl = demoUrl;
+        this.webhookUrl = webhookUrl;
+        this.onboardingUrl = onboardingUrl;
+        this.sortOrder = sortOrder;
+        this.orgOnly = orgOnly;
+        this.status = status;
+    }
+
     public Long getId() { return id; }
     public String getServiceCode() { return serviceCode; }
     public String getName() { return name; }

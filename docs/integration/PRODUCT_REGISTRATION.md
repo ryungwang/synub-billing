@@ -15,8 +15,10 @@
 | 2 | `apps/web/components/product-icon.tsx` | 권장 | 제품 아이콘 매핑 (없으면 기본 아이콘으로 폴백) |
 | 3 | `apps/api/.../service/DtoMapper.java` `USAGE` 맵 | 선택 | 대시보드 사용량 스탠드인 (없으면 usage=null) |
 
-> ❗ **제품을 만드는 REST API는 없다.** `CatalogController`는 **읽기 전용**(`GET /products`)이다.
-> 카탈로그 등록은 오직 **DB 마이그레이션**으로 한다. 관리자 CRUD 엔드포인트를 새로 만들지 말 것(현재 스코프 밖).
+> ❗ **플랜·가격(돈)은 마이그레이션 전용이다.** `CatalogController`는 읽기 전용(`GET /products`).
+> **제품 "메타"(이름·설명·분류·domain/demo/onboarding/webhook URL·정렬·노출·조직전용)는 관리자 콘솔에서 편집·신규등록 가능**
+> (`/admin/products` GET·POST·PUT, admin 전용). 단 **`service_code`는 생성 시에만 설정(이후 불변)**, **플랜·금액은 절대 관리자 API로 만들지 말 것** — 결제 무결성 때문에 아래 마이그레이션으로만.
+> 즉 **새 제품의 플랜/가격은 여전히 이 문서(마이그레이션)** 로, 그 제품의 표시 메타는 관리자 콘솔로.
 
 ---
 
@@ -173,7 +175,8 @@ private static final Map<String, UsageDto> USAGE = Map.of(
   판매 중단은 `status`를 `'active'`가 아닌 값으로 바꾸고 카탈로그 조회에서 거르는 방식(소프트) 권장.
 - ❌ `features`에 잘못된 JSON(따옴표 누락, 트레일링 콤마) → `::jsonb` 캐스팅 실패로 마이그레이션 오류.
 - ❌ `amount`에 콤마·소수점·문자.
-- ❌ 관리자용 제품 생성 REST API 신설(현재 스코프 밖 — 카탈로그는 마이그레이션으로만 관리).
+- ❌ 관리자 API로 **플랜·금액 생성/수정**(결제 무결성 — 마이그레이션 전용). 관리자 콘솔은 **제품 메타만** 다룬다(`AdminController`/`AdminService.createProduct·updateProduct`, `web/components/admin-products.tsx`).
+- ❌ `service_code` 사후 변경(연동 키 불변 — 관리자 수정 시에도 무시됨).
 - ⚠️ 현재 시드(`V2`)의 제품 4종(문서분석 AI/스레드 자동생성/회계 자동화/고객지원 데스크)은 **데모 데이터**다.
   실서비스 등록 시, 데모를 남길지/치울지 결정할 것. 치운다면 하드삭제 대신 새 마이그레이션에서
   `status`를 내리거나(권장) 데모 제거 마이그레이션을 별도로 작성.

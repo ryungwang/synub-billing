@@ -2,15 +2,19 @@ package io.synub.billing.service;
 
 import io.synub.billing.domain.Organization;
 import io.synub.billing.domain.Payment;
+import io.synub.billing.domain.Product;
 import io.synub.billing.domain.Subscription;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
 import io.synub.billing.dto.Dtos.AdminSubscriptionDto;
+import io.synub.billing.dto.Dtos.ProductAdminDto;
+import io.synub.billing.dto.Dtos.ProductMetaRequest;
 import io.synub.billing.gateway.PaymentGateway;
 import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.OrganizationRepository;
 import io.synub.billing.repo.PaymentRepository;
+import io.synub.billing.repo.ProductRepository;
 import io.synub.billing.repo.SubscriptionRepository;
 import io.synub.billing.storage.StorageService;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
@@ -38,10 +42,12 @@ public class AdminService {
     private final PaymentGateway gateway;
     private final StorageService storage;
     private final CurrentUser currentUser;
+    private final ProductRepository products;
 
     public AdminService(SubscriptionRepository subscriptions, PaymentRepository payments,
                         CustomerRepository customers, OrganizationRepository organizations,
-                        PaymentGateway gateway, StorageService storage, CurrentUser currentUser) {
+                        PaymentGateway gateway, StorageService storage, CurrentUser currentUser,
+                        ProductRepository products) {
         this.subscriptions = subscriptions;
         this.payments = payments;
         this.customers = customers;
@@ -49,6 +55,7 @@ public class AdminService {
         this.gateway = gateway;
         this.storage = storage;
         this.currentUser = currentUser;
+        this.products = products;
     }
 
     private void requireAdmin() {
@@ -180,5 +187,65 @@ public class AdminService {
         return new AdminPaymentDto(p.getId(), sub.getCustomer().getEmail(),
                 sub.getPlan().getProduct().getName(), p.getAmount(), p.getStatus(),
                 date, p.getReceiptNo());
+    }
+
+    // ---- 제품 메타 관리(관리자) — 가격/플랜은 마이그레이션 전용, 여기선 안 다룸 ----
+    @Transactional(readOnly = true)
+    public List<ProductAdminDto> products() {
+        requireAdmin();
+        return products.findAllByOrderBySortOrderAscIdAsc().stream().map(this::toProductDto).toList();
+    }
+
+    @Transactional
+    public ProductAdminDto createProduct(ProductMetaRequest req) {
+        requireAdmin();
+        String code = req.serviceCode() == null ? "" : req.serviceCode().trim();
+        if (!code.matches("^[a-z0-9-]{2,50}$")) {
+            throw new BadRequestException("service_code는 소문자-케밥(a-z,0-9,-) 2~50자여야 합니다.");
+        }
+        if (products.existsByServiceCode(code)) {
+            throw new BadRequestException("이미 존재하는 service_code입니다: " + code);
+        }
+        if (req.name() == null || req.name().isBlank()) {
+            throw new BadRequestException("제품명을 입력하세요.");
+        }
+        Product p = new Product(code, req.name().trim(), blank(req.category()), blank(req.description()),
+                blank(req.domainUrl()), blank(req.demoUrl()), blank(req.webhookUrl()), blank(req.onboardingUrl()),
+                req.sortOrder() == null ? 0 : req.sortOrder(),
+                Boolean.TRUE.equals(req.orgOnly()),
+                normalizeStatus(req.status()));
+        return toProductDto(products.save(p));
+    }
+
+    @Transactional
+    public ProductAdminDto updateProduct(Long id, ProductMetaRequest req) {
+        requireAdmin();
+        Product p = products.findById(id)
+                .orElseThrow(() -> new NotFoundException("제품을 찾을 수 없습니다."));
+        if (req.name() == null || req.name().isBlank()) {
+            throw new BadRequestException("제품명을 입력하세요.");
+        }
+        p.updateMeta(req.name().trim(), blank(req.category()), blank(req.description()),
+                blank(req.domainUrl()), blank(req.demoUrl()), blank(req.webhookUrl()), blank(req.onboardingUrl()),
+                req.sortOrder() == null ? p.getSortOrder() : req.sortOrder(),
+                req.orgOnly() == null ? p.isOrgOnly() : req.orgOnly(),
+                normalizeStatus(req.status()));
+        return toProductDto(p);
+    }
+
+    private ProductAdminDto toProductDto(Product p) {
+        return new ProductAdminDto(p.getId(), p.getServiceCode(), p.getName(), p.getCategory(),
+                p.getDescription(), p.getDomainUrl(), p.getDemoUrl(), p.getWebhookUrl(),
+                p.getOnboardingUrl(), p.getSortOrder(), p.isOrgOnly(), p.getStatus(),
+                p.getPlans() == null ? 0 : p.getPlans().size());
+    }
+
+    private static String blank(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    /** 노출 상태 정규화 — 'inactive'(숨김)만 특별 처리, 그 외 'active'. */
+    private static String normalizeStatus(String s) {
+        return "inactive".equalsIgnoreCase(s) ? "inactive" : "active";
     }
 }
