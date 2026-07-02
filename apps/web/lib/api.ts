@@ -264,10 +264,46 @@ export interface ApiAdminAnalytics {
   orgsByStatus: ApiNameValue[];
 }
 
+export interface ApiProfile {
+  avatarUrl: string | null;
+}
+
 export const api = {
   products: () => http<ApiProduct[]>("/products"),
   dashboard: () => http<ApiDashboard>("/dashboard"),
   organizations: () => http<ApiOrg[]>("/organizations"),
+
+  // 마이페이지 프로필(사진). avatarUrl은 <img src>로 쓰도록 절대 URL로 변환.
+  getProfile: async (): Promise<ApiProfile> => {
+    const r = await http<ApiProfile>("/me/profile");
+    return { avatarUrl: r.avatarUrl ? BASE + r.avatarUrl : null };
+  },
+  uploadAvatar: async (file: File): Promise<ApiProfile> => {
+    const fd = new FormData();
+    fd.append("avatar", file);
+    const token = getToken();
+    const res = await fetch(`${BASE}/me/avatar`, {
+      method: "POST",
+      headers: {
+        "X-Synub-Context": getContextHeader(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail = `${res.status} ${res.statusText}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = b.detail;
+      } catch {
+        /* noop */
+      }
+      throw new Error(detail);
+    }
+    const r = (await res.json()) as ApiProfile;
+    return { avatarUrl: r.avatarUrl ? BASE + r.avatarUrl : null };
+  },
+  deleteAvatar: () => http<void>("/me/avatar", { method: "DELETE" }),
   // 회사 생성 + 사업자 인증 서류(멀티파트). Content-Type 은 브라우저가 boundary 포함해 설정.
   createOrganization: async (input: {
     name: string;

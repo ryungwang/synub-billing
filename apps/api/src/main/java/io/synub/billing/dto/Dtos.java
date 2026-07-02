@@ -112,6 +112,9 @@ public final class Dtos {
     public record AdminCustomerDto(Long id, String externalId, String email, String phone,
                                    long subscriptions, LocalDate createdAt) {}
 
+    /** 마이페이지 프로필 — avatarUrl은 미설정 시 null. */
+    public record ProfileDto(String avatarUrl) {}
+
     public record RejectOrgRequest(String reason) {}
 
     /** 제품→빌링 조직 멤버 프로비저닝(예: 그룹웨어 직원 추가). role 미지정 시 member. */

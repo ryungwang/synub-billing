@@ -14,6 +14,7 @@ import {
   Check,
   User,
   Loader2,
+  Camera,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -51,6 +52,9 @@ const QUICK = [
 export default function AccountPage() {
   const { user, logout } = useAuth();
   const [orgs, setOrgs] = React.useState<ApiOrg[] | null>(null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
   const ctx = React.useSyncExternalStore(
     subscribeContext,
     rawContext,
@@ -60,6 +64,7 @@ export default function AccountPage() {
 
   React.useEffect(() => {
     api.organizations().then(setOrgs).catch(() => setOrgs([]));
+    api.getProfile().then((p) => setAvatarUrl(p.avatarUrl)).catch(() => {});
   }, []);
 
   if (!user) return null;
@@ -68,6 +73,35 @@ export default function AccountPage() {
   function switchTo(value: string) {
     setContext(value);
     window.location.href = "/";
+  }
+
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setErr(null);
+    try {
+      const p = await api.uploadAvatar(file);
+      setAvatarUrl(p.avatarUrl);
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "업로드에 실패했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function onDeleteAvatar() {
+    setUploading(true);
+    setErr(null);
+    try {
+      await api.deleteAvatar();
+      setAvatarUrl(null);
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "삭제에 실패했습니다.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -80,8 +114,36 @@ export default function AccountPage() {
       {/* 프로필 */}
       <Card className="p-6">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary-subtle text-2xl font-extrabold text-primary-subtle-foreground">
-            {initial}
+          <div className="relative shrink-0">
+            <div className="flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-primary-subtle text-2xl font-extrabold text-primary-subtle-foreground">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt="프로필"
+                  className="size-full object-cover"
+                />
+              ) : (
+                initial
+              )}
+            </div>
+            <label
+              title="프로필 사진 변경"
+              className="absolute -bottom-1.5 -right-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              {uploading ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Camera className="size-3.5" />
+              )}
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                className="hidden"
+                onChange={onPickAvatar}
+                disabled={uploading}
+              />
+            </label>
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -97,6 +159,16 @@ export default function AccountPage() {
             <div className="mt-0.5 text-sm text-muted-foreground">
               {user.email}
             </div>
+            {avatarUrl && (
+              <button
+                onClick={onDeleteAvatar}
+                disabled={uploading}
+                className="mt-1 text-xs font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+              >
+                프로필 사진 삭제
+              </button>
+            )}
+            {err && <div className="mt-1 text-xs text-destructive">{err}</div>}
           </div>
           <Button
             variant="outline"
