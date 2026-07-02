@@ -32,6 +32,7 @@ export interface ApiProduct {
   domain: string | null;
   subscribers: number;
   orgOnly: boolean;
+  status: string; // active(구독가능) | coming_soon(준비중·티저) | inactive(숨김, 카탈로그 미노출)
   plans: ApiPlan[];
 }
 

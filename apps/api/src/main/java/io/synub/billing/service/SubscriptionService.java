@@ -59,6 +59,10 @@ public class SubscriptionService {
         Owner owner = scope.writeOwner();
         Plan plan = plans.findById(req.planId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
+        // 준비중(coming_soon)·숨김(inactive) 제품은 구독 불가 — 카탈로그 티저로 노출돼도 서버에서 차단.
+        if (!"active".equalsIgnoreCase(plan.getProduct().getStatus())) {
+            throw new BadRequestException("아직 구독할 수 없는 제품입니다. (출시 준비 중)");
+        }
         // 조직 전용 제품(예: 그룹웨어)은 회사(조직) 컨텍스트에서만 구독 가능.
         if (plan.getProduct().isOrgOnly() && !owner.isOrganization()) {
             throw new BadRequestException("이 제품은 회사(조직) 계정만 구독할 수 있습니다. 회사로 전환한 뒤 구독하세요.");

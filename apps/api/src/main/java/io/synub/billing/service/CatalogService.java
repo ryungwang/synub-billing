@@ -24,7 +24,9 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public List<ProductDto> listProducts() {
-        return products.findByStatusOrderBySortOrderAsc("active")
+        // active(구독가능) + coming_soon(준비중·티저 노출)만 카탈로그에 노출. inactive(숨김)는 제외.
+        // 준비중 제품은 status로 프론트가 배지·구독불가 처리(구독 자체는 서버에서도 차단).
+        return products.findByStatusInOrderBySortOrderAsc(List.of("active", "coming_soon"))
                 .stream()
                 .map(p -> mapper.toProduct(
                         p, subscriptions.countByPlanProductIdAndStatus(p.getId(), "active")))

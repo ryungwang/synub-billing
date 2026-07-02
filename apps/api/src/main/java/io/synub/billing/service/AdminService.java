@@ -251,9 +251,14 @@ public class AdminService {
         return s == null || s.isBlank() ? null : s.trim();
     }
 
-    /** 노출 상태 정규화 — 'inactive'(숨김)만 특별 처리, 그 외 'active'. */
+    /** 노출 상태 정규화 — active(노출·구독가능) / coming_soon(준비중·노출만) / inactive(숨김). 미지정은 active. */
     private static String normalizeStatus(String s) {
-        return "inactive".equalsIgnoreCase(s) ? "inactive" : "active";
+        if (s == null) return "active";
+        return switch (s.toLowerCase()) {
+            case "inactive" -> "inactive";
+            case "coming_soon" -> "coming_soon";
+            default -> "active";
+        };
     }
 
     // ---- 대시보드 분석(차트 데이터) ----

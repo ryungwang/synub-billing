@@ -77,6 +77,8 @@ export function AdminProducts() {
                 <td className="px-3 py-3">
                   {p.status === "active" ? (
                     <Badge variant="success">노출</Badge>
+                  ) : p.status === "coming_soon" ? (
+                    <Badge variant="outline" className="border-primary/40 text-primary">준비중</Badge>
                   ) : (
                     <Badge variant="outline">
                       <EyeOff className="size-3" /> 숨김
@@ -235,6 +237,7 @@ function ProductForm({
               <span className="whitespace-nowrap text-muted-foreground">노출</span>
               <select className={FIELD + " w-auto"} value={f.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
                 <option value="active">노출(active)</option>
+                <option value="coming_soon">준비중(coming_soon)</option>
                 <option value="inactive">숨김(inactive)</option>
               </select>
             </label>

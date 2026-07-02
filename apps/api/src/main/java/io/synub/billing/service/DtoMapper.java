@@ -45,7 +45,7 @@ public class DtoMapper {
     public ProductDto toProduct(Product p, long subscribers) {
         List<PlanDto> plans = p.getPlans().stream().map(this::toPlan).toList();
         return new ProductDto(p.getServiceCode(), p.getName(), p.getCategory(),
-                p.getDescription(), p.getDomainUrl(), subscribers, p.isOrgOnly(), plans);
+                p.getDescription(), p.getDomainUrl(), subscribers, p.isOrgOnly(), p.getStatus(), plans);
     }
 
     public CardDto toCard(BillingKey k, long billedCount) {

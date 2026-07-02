@@ -110,6 +110,11 @@ export default function ProductsPage() {
                     <Badge variant="outline">{product.category}</Badge>
                   )}
                   {product.orgOnly && <Badge>조직 전용</Badge>}
+                  {product.status === "coming_soon" && (
+                    <Badge variant="outline" className="border-primary/40 text-primary">
+                      <Sparkles className="size-3" /> 곧 출시
+                    </Badge>
+                  )}
                 </div>
                 <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
                   {product.description}
@@ -190,16 +195,27 @@ export default function ProductsPage() {
                       className="mt-6 w-full"
                       size="lg"
                       variant={plan.highlight ? "primary" : "outline"}
-                      disabled={product.orgOnly && !isOrg}
+                      disabled={
+                        product.status === "coming_soon" ||
+                        (product.orgOnly && !isOrg)
+                      }
                       onClick={() => subscribe(product, plan)}
                     >
-                      {product.orgOnly && !isOrg ? "회사 계정 전용" : "구독하기"}
+                      {product.status === "coming_soon"
+                        ? "출시 예정"
+                        : product.orgOnly && !isOrg
+                        ? "회사 계정 전용"
+                        : "구독하기"}
                     </Button>
-                    {product.orgOnly && !isOrg && (
+                    {product.status === "coming_soon" ? (
+                      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                        출시 준비 중이에요 — 곧 만나요
+                      </p>
+                    ) : product.orgOnly && !isOrg ? (
                       <p className="mt-2 text-center text-[11px] text-muted-foreground">
                         상단에서 회사로 전환하면 구독할 수 있어요
                       </p>
-                    )}
+                    ) : null}
                   </Card>
                 );
               })}
