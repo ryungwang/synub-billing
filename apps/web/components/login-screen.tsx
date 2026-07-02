@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Loader2, AlertCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { COMPANY } from "@/lib/company";
 
 const DEMO = { email: "demo@synub.io", password: "demo1234" };
 
@@ -124,6 +126,21 @@ export function LoginScreen() {
           <ShieldCheck className="size-3.5 text-success" />
           비밀번호는 안전하게 암호화되어 보관됩니다.
         </p>
+
+        <div className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-medium">
+            <Link href="/pricing" className="hover:text-foreground">요금</Link>
+            <span className="text-border">·</span>
+            <Link href="/terms" className="hover:text-foreground">이용약관</Link>
+            <span className="text-border">·</span>
+            <Link href="/privacy" className="font-semibold hover:text-foreground">개인정보처리방침</Link>
+            <span className="text-border">·</span>
+            <Link href="/refund" className="hover:text-foreground">환불·청약철회</Link>
+          </div>
+          <p className="mt-2 text-muted-foreground/70">
+            {COMPANY.legalName} · 대표 {COMPANY.ceo} · 사업자등록번호 {COMPANY.bizRegNo} · 통신판매업 {COMPANY.mailOrderNo}
+          </p>
+        </div>
       </div>
     </div>
   );

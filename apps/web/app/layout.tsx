@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Synub Billing — 통합 결제·구독 관리",
   description:
     "신업의 여러 SaaS 제품을 하나의 계정으로 구독하고 결제를 관리하세요.",
+  // 결제·구독 관리 앱(로그인 게이트)이라 검색 색인 제외 — 사업자 주소 등이 검색에 노출되지 않도록.
+  // PG 심사 스크래퍼는 URL을 직접 읽으므로 영향 없음. 마케팅/SEO는 회사 홈(synub.io)이 담당.
+  robots: { index: false, follow: false },
   manifest: "/site.webmanifest",
   icons: {
     icon: [
