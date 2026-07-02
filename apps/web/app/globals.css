@@ -71,9 +71,9 @@
   --popover: #21242c;
   --popover-foreground: #edeff2;
 
-  --primary: #4a90ff;
+  --primary: #3b82f6;
   --primary-hover: #5d9dff;
-  --primary-foreground: #0b1220;
+  --primary-foreground: #ffffff; /* 파란 버튼 위 흰 글씨 — 다크모드에서 검정 글씨 안 보이던 것 수정 */
   --primary-subtle: #1a2c4a;
   --primary-subtle-foreground: #9cc2ff;
 

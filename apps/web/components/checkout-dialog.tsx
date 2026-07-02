@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { ProductIcon } from "@/components/product-icon";
 import { cn, formatKRW } from "@/lib/utils";
 import { api, type ApiCard, type PricingType } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { issueBillingKey, portoneConfigured } from "@/lib/portone";
 import {
   Check,
   CreditCard,
@@ -45,6 +47,7 @@ export function CheckoutDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [cards, setCards] = React.useState<ApiCard[]>([]);
   const [selectedCard, setSelectedCard] = React.useState<number | "new" | null>(
     null
@@ -80,17 +83,27 @@ export function CheckoutDialog({
 
   async function submit() {
     if (!target) return;
-    const cardId =
-      typeof selectedCard === "number"
-        ? selectedCard
-        : cards.find((c) => c.isPrimary)?.id;
-    if (!cardId) {
-      setError("결제할 카드를 먼저 등록해 주세요.");
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
+      let cardId =
+        typeof selectedCard === "number" ? selectedCard : undefined;
+      if (selectedCard === "new") {
+        // 새 카드: 포트원 결제창에서 빌링키 발급 → 등록 → 그 카드로 구독.
+        if (!portoneConfigured) throw new Error("포트원 결제 설정이 필요합니다.");
+        const issued = await issueBillingKey({
+          email: user?.email ?? "",
+          fullName: user?.name,
+        });
+        if (!issued) throw new Error("카드 등록에 실패했습니다.");
+        const card = await api.registerCard({
+          pgBillingKey: issued.billingKey,
+          primary: true,
+        });
+        cardId = card.id;
+      }
+      if (!cardId) cardId = cards.find((c) => c.isPrimary)?.id;
+      if (!cardId) throw new Error("결제할 카드를 먼저 등록해 주세요.");
       await api.createSubscription(
         target.planId,
         cardId,
@@ -265,14 +278,18 @@ export function CheckoutDialog({
               </span>
               <span className="text-muted-foreground">
                 <a
-                  href="#"
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-semibold text-foreground underline-offset-2 hover:underline"
                 >
                   이용약관
                 </a>{" "}
                 및{" "}
                 <a
-                  href="#"
+                  href="/refund"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-semibold text-foreground underline-offset-2 hover:underline"
                 >
                   환불정책

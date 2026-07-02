@@ -41,18 +41,22 @@ export async function issueBillingKey(
 
   const PortOne = (await import("@portone/browser-sdk/v2")).default;
   const issueId = `synub-bk-${Date.now()}`;
+
+  // 포트원은 customer.email에 유효한 이메일 형식만 허용 — 통합계정 로그인ID가 이메일이 아닐 수 있으므로
+  // 형식이 맞을 때만 전달(아니면 생략). 이름/전화도 값이 있을 때만.
+  const isEmail = (v?: string) => !!v && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+  const customerParam: { email?: string; fullName?: string; phoneNumber?: string } = {};
+  if (isEmail(customer.email)) customerParam.email = customer.email;
+  if (customer.fullName) customerParam.fullName = customer.fullName;
+  if (customer.phoneNumber) customerParam.phoneNumber = customer.phoneNumber;
+
   const res = await PortOne.requestIssueBillingKey({
     storeId: STORE_ID,
     channelKey: CHANNEL_KEY,
     billingKeyMethod: "CARD",
     issueId,
     issueName: "Synub 정기결제 카드 등록",
-    // 포트원 V2 빌링키 발급 — 구매자 이메일/이름/전화 전달(토스페이먼츠 채널)
-    customer: {
-      email: customer.email,
-      fullName: customer.fullName,
-      phoneNumber: customer.phoneNumber,
-    },
+    customer: customerParam,
   });
 
   if (!res || res.code != null) {
