@@ -23,7 +23,11 @@ public record AppProperties(Cors cors, Billing billing,
     public record Business(String statusApiUrl, String validateApiUrl, String apiKey) {}
 
     /** 파일 저장. dir = 로컬 파일시스템 저장 경로(운영은 S3 어댑터로 교체). */
-    public record Storage(String dir) {}
+    /** 파일 저장. dir=로컬 파일시스템 경로(dev). s3=운영 버킷 설정. */
+    public record Storage(String dir, S3 s3) {}
+
+    /** 운영 S3 저장(사업자등록증 등). bucket/region 필수(prod), prefix로 앱별 네임스페이스. */
+    public record S3(String bucket, String region, String prefix) {}
 
     /**
      * 발신 이메일. from=발신 주소, appBaseUrl=이메일 내 링크 대상(앱 URL).

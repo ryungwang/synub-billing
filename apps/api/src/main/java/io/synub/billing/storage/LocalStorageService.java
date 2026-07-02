@@ -4,6 +4,7 @@ import io.synub.billing.config.AppProperties;
 import io.synub.billing.web.ApiExceptions.BadRequestException;
 import io.synub.billing.web.ApiExceptions.NotFoundException;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -12,8 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
-/** 로컬 파일시스템 저장. app.storage.dir 하위에 보관. (운영은 S3 어댑터로 교체) */
+/** 로컬 파일시스템 저장(dev). app.storage.dir 하위에 보관. 운영은 S3StorageService(@Profile prod). */
 @Service
+@Profile("!prod")
 public class LocalStorageService implements StorageService {
 
     private final Path root;

@@ -24,6 +24,10 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
+    // 파일 저장(사업자등록증 등) — prod S3 어댑터. 로컬은 파일시스템(@Profile 분기). office와 동일 BOM.
+    implementation(platform("software.amazon.awssdk:bom:2.28.29"))
+    implementation("software.amazon.awssdk:s3")
+
     // SSO 토큰(JWT) 실제 서명검증 — HS256(공유키) 및 RS256/JWKS(SSO 공개키) 지원.
     implementation("com.nimbusds:nimbus-jose-jwt:9.40")
 
