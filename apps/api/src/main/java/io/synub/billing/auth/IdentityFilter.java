@@ -41,6 +41,9 @@ public class IdentityFilter extends OncePerRequestFilter {
             // 제품 카탈로그(요금)는 마케팅용 공개 정보 — 로그인 전 요금 페이지(/pricing) 서버렌더가 조회.
             "/products"};
 
+    /** 데모(둘러보기) 계정의 external_id — 이 신원의 변경 요청은 차단(조회 전용). */
+    private static final String DEMO_EXTERNAL_ID = "demo-user";
+
     private final TokenVerifier verifier;
     private final AppProperties.Sso cfg;
     private final ObjectMapper json;
@@ -86,6 +89,12 @@ public class IdentityFilter extends OncePerRequestFilter {
             return;
         }
 
+        // 데모(둘러보기) 계정은 조회 전용 — 운영 데이터·결제 변경을 서버에서 차단(공개 데모의 안전장치).
+        if (identity != null && DEMO_EXTERNAL_ID.equals(identity.externalId()) && isMutating(request.getMethod())) {
+            forbid(response, "데모 계정은 둘러보기 전용입니다. 구독·결제·변경은 할 수 없습니다.");
+            return;
+        }
+
         if (identity != null) {
             IdentityContext.set(identity);
         }
@@ -111,5 +120,20 @@ public class IdentityFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         json.writeValue(response.getWriter(),
                 Map.of("error", "unauthorized", "message", message));
+    }
+
+    private void forbid(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        json.writeValue(response.getWriter(),
+                Map.of("error", "forbidden", "message", message));
+    }
+
+    /** 상태를 바꾸는 메서드인지(GET/HEAD/OPTIONS 외). */
+    private static boolean isMutating(String method) {
+        return !"GET".equalsIgnoreCase(method)
+                && !"HEAD".equalsIgnoreCase(method)
+                && !"OPTIONS".equalsIgnoreCase(method);
     }
 }
