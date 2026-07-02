@@ -127,14 +127,19 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {product.plans.map((plan) => {
+              {product.plans
+                .filter((p) => p.cycle === "monthly")
+                .map((plan) => {
                 const perSeat = plan.pricingType === "per_seat";
-                const isMonthlyPlan = plan.cycle === "monthly";
-                const showYearly = yearly && isMonthlyPlan && !perSeat;
-                const displayAmount = showYearly ? plan.amount * 10 : plan.amount;
+                // 같은 티어의 연간 플랜(코드 규약: <월간코드>_yearly). 있으면 토글로 연간가격·연간구독.
+                const yearlyPlan = product.plans.find(
+                  (p) => p.cycle === "yearly" && p.code === plan.code + "_yearly"
+                );
+                const useYear = yearly && !!yearlyPlan && !perSeat;
+                const active = useYear && yearlyPlan ? yearlyPlan : plan;
                 const cycleLabel = perSeat
                   ? "인 · 월"
-                  : showYearly || plan.cycle === "yearly"
+                  : active.cycle === "yearly"
                   ? "년"
                   : "월";
 
@@ -162,20 +167,20 @@ export default function ProductsPage() {
                     </p>
 
                     <div className="mt-4">
-                      {showYearly && (
+                      {useYear && (
                         <div className="text-sm text-muted-foreground line-through tnum">
                           {formatKRW(plan.amount * 12)}
                         </div>
                       )}
                       <div className="flex items-baseline gap-1">
                         <span className="text-[28px] font-extrabold tracking-tight tnum">
-                          {formatKRW(displayAmount)}
+                          {formatKRW(active.amount)}
                         </span>
                         <span className="text-sm font-medium text-muted-foreground">
                           / {cycleLabel}
                         </span>
                       </div>
-                      {showYearly && (
+                      {useYear && (
                         <div className="mt-1">
                           <Badge variant="success">2개월 무료</Badge>
                         </div>
@@ -199,7 +204,7 @@ export default function ProductsPage() {
                         product.status === "coming_soon" ||
                         (product.orgOnly && !isOrg)
                       }
-                      onClick={() => subscribe(product, plan)}
+                      onClick={() => subscribe(product, active)}
                     >
                       {product.status === "coming_soon"
                         ? "출시 예정"
