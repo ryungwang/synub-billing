@@ -1,5 +1,6 @@
 package io.synub.billing.web;
 
+import io.synub.billing.dto.Dtos.AdminAnalyticsDto;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
@@ -29,6 +30,11 @@ public class AdminController {
     @GetMapping("/stats")
     public AdminStatsDto stats() {
         return admin.stats();
+    }
+
+    @GetMapping("/analytics")
+    public AdminAnalyticsDto analytics() {
+        return admin.analytics();
     }
 
     @GetMapping("/subscriptions")

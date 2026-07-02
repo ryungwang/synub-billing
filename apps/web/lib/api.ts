@@ -240,6 +240,18 @@ export interface ApiAdminPayment {
   receiptNo: string;
 }
 
+// 관리자 대시보드 차트 데이터
+export interface ApiMonthPoint { month: string; amount: number; count: number }
+export interface ApiNameValue { name: string; value: number }
+export interface ApiAdminAnalytics {
+  revenueTrend: ApiMonthPoint[];
+  subsTrend: ApiMonthPoint[];
+  subsByStatus: ApiNameValue[];
+  revenueByProduct: ApiNameValue[];
+  paymentsByStatus: ApiNameValue[];
+  orgsByStatus: ApiNameValue[];
+}
+
 export const api = {
   products: () => http<ApiProduct[]>("/products"),
   dashboard: () => http<ApiDashboard>("/dashboard"),
@@ -313,6 +325,7 @@ export const api = {
 
   // 관리자 콘솔
   adminStats: () => http<ApiAdminStats>("/admin/stats"),
+  adminAnalytics: () => http<ApiAdminAnalytics>("/admin/analytics"),
   adminSubscriptions: () => http<ApiAdminSubscription[]>("/admin/subscriptions"),
   adminPayments: () => http<ApiAdminPayment[]>("/admin/payments"),
   adminRefund: (id: number) =>

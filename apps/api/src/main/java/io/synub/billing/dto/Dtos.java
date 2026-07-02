@@ -129,4 +129,18 @@ public final class Dtos {
     public record ProductMetaRequest(String serviceCode, String name, String category,
             String description, String domainUrl, String demoUrl, String webhookUrl,
             String onboardingUrl, Integer sortOrder, Boolean orgOnly, String status) {}
+
+    // ---- 관리자 대시보드 분석(차트) ----
+    /** 월별 포인트 — 추세 차트용(매출/건수). */
+    public record MonthPoint(String month, long amount, long count) {}
+    /** 이름-값 쌍 — 분포(도넛/막대)용. */
+    public record NameValue(String name, long value) {}
+    /** 관리자 대시보드 차트 데이터 묶음. */
+    public record AdminAnalyticsDto(
+            List<MonthPoint> revenueTrend,      // 최근 6개월 결제 매출
+            List<MonthPoint> subsTrend,         // 최근 6개월 신규 구독 수
+            List<NameValue> subsByStatus,       // 구독 상태 분포
+            List<NameValue> revenueByProduct,   // 제품별 누적 결제 매출
+            List<NameValue> paymentsByStatus,   // 결제 상태 분포
+            List<NameValue> orgsByStatus) {}    // 회사 인증 상태 분포
 }

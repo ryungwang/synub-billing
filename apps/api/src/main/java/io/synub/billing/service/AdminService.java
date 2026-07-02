@@ -6,8 +6,11 @@ import io.synub.billing.domain.Product;
 import io.synub.billing.domain.Subscription;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
+import io.synub.billing.dto.Dtos.AdminAnalyticsDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
 import io.synub.billing.dto.Dtos.AdminSubscriptionDto;
+import io.synub.billing.dto.Dtos.MonthPoint;
+import io.synub.billing.dto.Dtos.NameValue;
 import io.synub.billing.dto.Dtos.ProductAdminDto;
 import io.synub.billing.dto.Dtos.ProductMetaRequest;
 import io.synub.billing.gateway.PaymentGateway;
@@ -27,7 +30,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** 플랫폼 관리자 콘솔 — 운영자(admin claim) 전용 통계·구독·결제·환불. */
 @Service
@@ -247,5 +254,83 @@ public class AdminService {
     /** 노출 상태 정규화 — 'inactive'(숨김)만 특별 처리, 그 외 'active'. */
     private static String normalizeStatus(String s) {
         return "inactive".equalsIgnoreCase(s) ? "inactive" : "active";
+    }
+
+    // ---- 대시보드 분석(차트 데이터) ----
+    @Transactional(readOnly = true)
+    public AdminAnalyticsDto analytics() {
+        requireAdmin();
+        var kst = DtoMapper.KST;
+        List<YearMonth> months = new ArrayList<>();
+        YearMonth now = YearMonth.now(kst);
+        for (int i = 5; i >= 0; i--) months.add(now.minusMonths(i)); // 최근 6개월(오래된→최신)
+
+        List<Payment> pays = payments.findAll();
+        List<Subscription> subsList = subscriptions.findAllByOrderByIdDesc();
+        List<Organization> orgs = organizations.findAllByOrderByIdDesc();
+
+        // 매출 추세 — paid 결제 월별 합
+        Map<YearMonth, Long> revByMonth = new LinkedHashMap<>();
+        months.forEach(m -> revByMonth.put(m, 0L));
+        for (Payment p : pays) {
+            if (!"paid".equals(p.getStatus())) continue;
+            Instant when = p.getPaidAt() != null ? p.getPaidAt() : p.getCreatedAt();
+            YearMonth m = YearMonth.from(when.atZone(kst));
+            if (revByMonth.containsKey(m)) revByMonth.merge(m, (long) p.getAmount(), Long::sum);
+        }
+        List<MonthPoint> revenueTrend = months.stream()
+                .map(m -> new MonthPoint(m.getMonthValue() + "월", revByMonth.get(m), 0)).toList();
+
+        // 신규 구독 추세 — startedAt 월별 건수
+        Map<YearMonth, Long> subsByMonth = new LinkedHashMap<>();
+        months.forEach(m -> subsByMonth.put(m, 0L));
+        for (Subscription s : subsList) {
+            Instant when = s.getStartedAt() != null ? s.getStartedAt() : s.getCreatedAt();
+            if (when == null) continue;
+            YearMonth m = YearMonth.from(when.atZone(kst));
+            if (subsByMonth.containsKey(m)) subsByMonth.merge(m, 1L, Long::sum);
+        }
+        List<MonthPoint> subsTrend = months.stream()
+                .map(m -> new MonthPoint(m.getMonthValue() + "월", 0, subsByMonth.get(m))).toList();
+
+        // 구독 상태 분포(고정 순서)
+        List<NameValue> subsByStatus = statusCounts(
+                subsList.stream().map(Subscription::getStatus).toList(),
+                List.of("active", "past_due", "suspended", "canceled"),
+                Map.of("active", "이용중", "past_due", "연체", "suspended", "정지", "canceled", "해지"));
+
+        // 제품별 누적 매출(paid) — 큰 값 순
+        Map<String, Long> byProduct = new LinkedHashMap<>();
+        for (Payment p : pays) {
+            if (!"paid".equals(p.getStatus())) continue;
+            String name = p.getSubscription().getPlan().getProduct().getName();
+            byProduct.merge(name, (long) p.getAmount(), Long::sum);
+        }
+        List<NameValue> revenueByProduct = byProduct.entrySet().stream()
+                .map(e -> new NameValue(e.getKey(), e.getValue()))
+                .sorted(Comparator.comparingLong(NameValue::value).reversed()).toList();
+
+        // 결제 상태 분포
+        List<NameValue> paymentsByStatus = statusCounts(
+                pays.stream().map(Payment::getStatus).toList(),
+                List.of("paid", "failed", "refunded"),
+                Map.of("paid", "완료", "failed", "실패", "refunded", "환불"));
+
+        // 회사 인증 상태 분포
+        List<NameValue> orgsByStatus = statusCounts(
+                orgs.stream().map(Organization::getVerifyStatus).toList(),
+                List.of("verified", "pending", "rejected"),
+                Map.of("verified", "인증완료", "pending", "심사대기", "rejected", "반려"));
+
+        return new AdminAnalyticsDto(revenueTrend, subsTrend, subsByStatus,
+                revenueByProduct, paymentsByStatus, orgsByStatus);
+    }
+
+    /** 상태값 목록을 고정 순서·한글 라벨로 카운트. */
+    private static List<NameValue> statusCounts(List<String> values, List<String> order, Map<String, String> labels) {
+        Map<String, Long> c = new LinkedHashMap<>();
+        order.forEach(k -> c.put(k, 0L));
+        for (String v : values) if (c.containsKey(v)) c.merge(v, 1L, Long::sum);
+        return order.stream().map(k -> new NameValue(labels.getOrDefault(k, k), c.get(k))).toList();
     }
 }
