@@ -90,7 +90,8 @@ const ADMIN_GROUP: NavGroup = {
     { href: "/admin", label: "대시보드", icon: LayoutDashboard },
     { href: "/admin/subscriptions", label: "구독", icon: Repeat },
     { href: "/admin/payments", label: "결제", icon: ReceiptText },
-    { href: "/admin/organizations", label: "회사 심사", icon: ShieldCheck },
+    { href: "/admin/customers", label: "개인 고객", icon: Users },
+    { href: "/admin/organizations", label: "회사", icon: ShieldCheck },
     { href: "/admin/products", label: "제품", icon: Package },
   ],
 };

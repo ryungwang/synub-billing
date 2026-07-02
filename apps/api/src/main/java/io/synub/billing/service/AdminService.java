@@ -4,6 +4,7 @@ import io.synub.billing.domain.Organization;
 import io.synub.billing.domain.Payment;
 import io.synub.billing.domain.Product;
 import io.synub.billing.domain.Subscription;
+import io.synub.billing.dto.Dtos;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminAnalyticsDto;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -118,6 +120,17 @@ public class AdminService {
     }
 
     // ---- 회사 인증 심사 ----
+
+    @Transactional(readOnly = true)
+    public List<Dtos.AdminCustomerDto> customers() {
+        requireAdmin();
+        return customers.findAllByOrderByIdDesc().stream()
+                .map(c -> new Dtos.AdminCustomerDto(c.getId(), c.getExternalId(), c.getEmail(), c.getPhone(),
+                        subscriptions.countByCustomerId(c.getId()),
+                        c.getCreatedAt() == null ? null
+                                : LocalDate.ofInstant(c.getCreatedAt(), DtoMapper.KST)))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<AdminOrgDto> organizations() {

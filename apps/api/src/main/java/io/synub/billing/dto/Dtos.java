@@ -107,6 +107,10 @@ public final class Dtos {
     public record AdminOrgDto(Long id, String name, String businessNo, String orgCode,
                               String verifyStatus, String rejectReason) {}
 
+    /** 관리자 개인(결제 고객) 목록 행 — SSO 통합계정 매핑. subscriptions=이 고객의 총 구독 수. */
+    public record AdminCustomerDto(Long id, String externalId, String email, String phone,
+                                   long subscriptions, LocalDate createdAt) {}
+
     public record RejectOrgRequest(String reason) {}
 
     /** 제품→빌링 조직 멤버 프로비저닝(예: 그룹웨어 직원 추가). role 미지정 시 member. */

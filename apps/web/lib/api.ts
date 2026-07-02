@@ -165,6 +165,16 @@ export interface ApiAdminOrg {
   rejectReason: string | null;
 }
 
+// 관리자 개인(결제 고객) 목록 행 — SSO 통합계정 매핑
+export interface ApiAdminCustomer {
+  id: number;
+  externalId: string;
+  email: string | null;
+  phone: string | null;
+  subscriptions: number;
+  createdAt: string | null;
+}
+
 // 관리자 제품 메타(가격/플랜 제외 — 그건 마이그레이션 전용)
 export interface ApiAdminProduct {
   id: number;
@@ -331,6 +341,7 @@ export const api = {
   adminPayments: () => http<ApiAdminPayment[]>("/admin/payments"),
   adminRefund: (id: number) =>
     http<ApiAdminPayment>(`/admin/payments/${id}/refund`, { method: "POST" }),
+  adminCustomers: () => http<ApiAdminCustomer[]>("/admin/customers"),
   adminOrganizations: () => http<ApiAdminOrg[]>("/admin/organizations"),
   adminApproveOrg: (id: number) =>
     http<void>(`/admin/organizations/${id}/approve`, { method: "POST" }),

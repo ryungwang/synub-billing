@@ -1,6 +1,7 @@
 package io.synub.billing.web;
 
 import io.synub.billing.dto.Dtos.AdminAnalyticsDto;
+import io.synub.billing.dto.Dtos.AdminCustomerDto;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
@@ -69,6 +70,11 @@ public class AdminController {
     }
 
     // ---- 회사 인증 심사 ----
+
+    @GetMapping("/customers")
+    public List<AdminCustomerDto> customers() {
+        return admin.customers();
+    }
 
     @GetMapping("/organizations")
     public List<AdminOrgDto> organizations() {
