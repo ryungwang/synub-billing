@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/synub-billing-api
+  IMAGE_NAME: ${{ github.repository_owner }}/synub-app-api
 
 jobs:
   build-push-deploy:
