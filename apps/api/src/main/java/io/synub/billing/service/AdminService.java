@@ -263,7 +263,7 @@ public class AdminService {
         var kst = DtoMapper.KST;
         List<YearMonth> months = new ArrayList<>();
         YearMonth now = YearMonth.now(kst);
-        for (int i = 5; i >= 0; i--) months.add(now.minusMonths(i)); // 최근 6개월(오래된→최신)
+        for (int i = 11; i >= 0; i--) months.add(now.minusMonths(i)); // 최근 12개월(오래된→최신)
 
         List<Payment> pays = payments.findAll();
         List<Subscription> subsList = subscriptions.findAllByOrderByIdDesc();

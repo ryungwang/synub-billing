@@ -61,7 +61,11 @@ export function AreaTrend({ data, height = 200 }: { data: Pt[]; height?: number 
             fill="var(--card)" stroke="var(--primary)" strokeWidth="2.5" />
         ))}
         {data.map((d, i) => (
-          <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={AXIS}>{d.label}</text>
+          <text key={i}
+            x={i === 0 ? padL : i === n - 1 ? W - padR : x(i)}
+            y={H - 8}
+            textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
+            fontSize="11" fill={AXIS}>{d.label}</text>
         ))}
       </svg>
       {hi !== null && (

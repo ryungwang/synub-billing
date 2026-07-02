@@ -69,7 +69,7 @@ export default function AdminDashboardPage() {
 
       {/* 매출 추세 */}
       <div className="mt-4">
-        <Panel title="월별 결제 매출" sub="최근 6개월 · 결제 완료 기준">
+        <Panel title="월별 결제 매출" sub="최근 12개월 · 결제 완료 기준">
           {an ? <AreaTrend data={an.revenueTrend.map((p) => ({ label: p.month, value: p.amount }))} />
               : <ChartSkeleton h={200} />}
         </Panel>
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
 
       {/* 신규 구독 · 제품별 매출 */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <Panel title="신규 구독" sub="최근 6개월">
+        <Panel title="신규 구독" sub="최근 12개월">
           {an ? <BarTrend unit="건" data={an.subsTrend.map((p) => ({ label: p.month, value: p.count }))} />
               : <ChartSkeleton h={180} />}
         </Panel>
