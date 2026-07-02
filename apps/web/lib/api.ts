@@ -70,6 +70,7 @@ export interface ApiSubscription {
   unitAmount: number;
   seats: number;
   creditBalance: number;
+  complimentary: boolean;
 }
 
 export interface ApiPayment {

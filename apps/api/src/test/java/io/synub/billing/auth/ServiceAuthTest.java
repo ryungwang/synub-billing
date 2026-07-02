@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ServiceAuthTest {
 
     private ServiceAuth auth(String internal, String entKey) {
-        AppProperties props = new AppProperties(null, null, null, null, null, null, null, null, null,
+        AppProperties props = new AppProperties(null, null, null, null, null, null, null, null,
                 new AppProperties.Internal(internal), new AppProperties.Entitlement(entKey));
         return new ServiceAuth(props);
     }

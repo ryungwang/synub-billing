@@ -16,7 +16,7 @@ class PortoneWebhookVerifierTest {
     private static final String SECRET = "whsec_dGVzdGtleQ=="; // key = "testkey"
 
     private PortoneWebhookVerifier verifier(String secret) {
-        AppProperties props = new AppProperties(null, null, null, null,
+        AppProperties props = new AppProperties(null, null, null,
                 new AppProperties.Portone(false, null, null, null, null, null, secret),
                 null, null, null, null, null, null);
         return new PortoneWebhookVerifier(props);

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BusinessVerifierTest {
 
     private BusinessVerifier verifier() {
-        AppProperties props = new AppProperties(null, null, null, null, null, null, null,
+        AppProperties props = new AppProperties(null, null, null, null, null, null,
                 new AppProperties.Business(null, null, null), // apiKey 없음 → 체크섬만
                 null, null, null);
         return new BusinessVerifier(props, new ObjectMapper());

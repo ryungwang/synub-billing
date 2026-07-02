@@ -70,7 +70,7 @@ public class DtoMapper {
                 s.chargeAmount(), plan.getBillingCycle(), s.getStatus(),
                 started, s.getNextBillingDate(), card, s.isCancelAtPeriodEnd(),
                 months, usage, plan.getPricingType(), plan.getAmount(), s.getSeats(),
-                s.getCreditBalance());
+                s.getCreditBalance(), s.isComplimentary());
     }
 
     public PaymentDto toPayment(Payment pay) {

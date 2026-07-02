@@ -28,7 +28,7 @@ class JwtTokenVerifierTest {
 
     private static JwtTokenVerifier verifier() {
         return new JwtTokenVerifier(new AppProperties(
-                null, null, null, null, null, cfg(), null, null, null, null, null));
+                null, null, null, null, cfg(), null, null, null, null, null));
     }
 
     private static JWTClaimsSet.Builder validClaims() {

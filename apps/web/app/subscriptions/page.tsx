@@ -15,6 +15,7 @@ import {
   Loader2,
   Minus,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -119,10 +120,12 @@ export default function SubscriptionsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="text-lg font-extrabold tnum">
-                      {formatKRW(s.amount)}
+                      {s.complimentary ? "무상" : formatKRW(s.amount)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {s.pricingType === "per_seat"
+                      {s.complimentary
+                        ? "개발사 제공"
+                        : s.pricingType === "per_seat"
                         ? `${s.seats}인 × ${formatKRW(s.unitAmount)} / 월`
                         : `/ ${s.cycle === "yearly" ? "년" : "월"}`}
                     </div>
@@ -182,47 +185,55 @@ export default function SubscriptionsPage() {
               </div>
 
               <div className="flex items-center gap-2 border-t border-border bg-muted/30 px-5 py-3 sm:px-6">
-                {isPastDue && (
-                  <div className="mr-auto flex items-center gap-1.5 text-[13px] font-medium text-warning-foreground">
-                    <AlertTriangle className="size-4 text-warning" />
-                    결제 실패 — 재시도 예정
+                {s.complimentary ? (
+                  <div className="flex items-center gap-1.5 text-[13px] font-medium text-success-foreground">
+                    <Sparkles className="size-4 text-success" />
+                    개발사 무상 제공 · 자동 관리 (청구·해지 없음)
                   </div>
-                )}
-                {isCanceled && (
-                  <div className="mr-auto text-[13px] text-muted-foreground">
-                    {formatDate(s.nextBillingDate)}까지 이용 후 자동 종료됩니다.
-                  </div>
-                )}
-                {!isPastDue && !isCanceled && (
-                  <div className="mr-auto text-[13px] text-muted-foreground">
-                    다음 청구 예정{" "}
-                    <span className="font-semibold text-foreground tnum">
-                      {formatKRW(s.amount)}
-                    </span>
-                  </div>
-                )}
-
-                {isCanceled ? (
-                  <Button variant="subtle" size="sm" disabled>
-                    <RotateCcw />
-                    해지 예정
-                  </Button>
                 ) : (
                   <>
-                    <ChangePlanDialog
-                      sub={s}
-                      plans={planList}
-                      onChanged={reload}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => setCancelTarget(s)}
-                    >
-                      <Ban />
-                      해지
-                    </Button>
+                    {isPastDue && (
+                      <div className="mr-auto flex items-center gap-1.5 text-[13px] font-medium text-warning-foreground">
+                        <AlertTriangle className="size-4 text-warning" />
+                        결제 실패 — 재시도 예정
+                      </div>
+                    )}
+                    {isCanceled && (
+                      <div className="mr-auto text-[13px] text-muted-foreground">
+                        {formatDate(s.nextBillingDate)}까지 이용 후 자동 종료됩니다.
+                      </div>
+                    )}
+                    {!isPastDue && !isCanceled && (
+                      <div className="mr-auto text-[13px] text-muted-foreground">
+                        다음 청구 예정{" "}
+                        <span className="font-semibold text-foreground tnum">
+                          {formatKRW(s.amount)}
+                        </span>
+                      </div>
+                    )}
+                    {isCanceled ? (
+                      <Button variant="subtle" size="sm" disabled>
+                        <RotateCcw />
+                        해지 예정
+                      </Button>
+                    ) : (
+                      <>
+                        <ChangePlanDialog
+                          sub={s}
+                          plans={planList}
+                          onChanged={reload}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => setCancelTarget(s)}
+                        >
+                          <Ban />
+                          해지
+                        </Button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
