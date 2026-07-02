@@ -226,13 +226,13 @@ function ProductForm({
             <input className={FIELD} value={f.webhookUrl ?? ""} onChange={(e) => set("webhookUrl", e.target.value)} placeholder="https://office.synub.io/webhooks/billing" />
           </label>
 
-          <div className="flex items-center gap-5 pt-1">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="size-4 accent-primary" checked={!!f.orgOnly} onChange={(e) => set("orgOnly", e.target.checked)} />
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
+            <label className="flex min-w-0 items-center gap-2 text-sm">
+              <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={!!f.orgOnly} onChange={(e) => set("orgOnly", e.target.checked)} />
               조직 전용 (회사 컨텍스트에서만 구독)
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">노출</span>
+            <label className="flex shrink-0 items-center gap-2 text-sm">
+              <span className="whitespace-nowrap text-muted-foreground">노출</span>
               <select className={FIELD + " w-auto"} value={f.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
                 <option value="active">노출(active)</option>
                 <option value="inactive">숨김(inactive)</option>
