@@ -75,7 +75,7 @@ app:
     # 로컬 SSO(apps/sso, 8090)가 JWKS를 제공 → 기본 jwks. SSO 미기동이어도 무토큰 요청은 dev-fallback으로 동작.
     mode: ${SSO_MODE:jwks}
     jwt-secret: ${SSO_JWT_SECRET:local-dev-sso-signing-secret-change-me-please-0123456789}
-    jwks-uri: ${SSO_JWKS_URI:http://localhost:8090/.well-known/jwks.json}
+    jwks-uri: ${SSO_JWKS_URL:http://localhost:8090/.well-known/jwks.json}
     issuer: ${SSO_ISSUER:https://accounts.synub.io}
     audience: ${SSO_AUDIENCE:synub-billing}
     clock-skew-seconds: 60

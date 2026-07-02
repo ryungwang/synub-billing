@@ -85,7 +85,7 @@ app:
     # dev-fallback 반드시 off(토큰 필수).
     mode: ${SSO_MODE:jwks}
     jwt-secret: ${SSO_JWT_SECRET:}
-    jwks-uri: ${SSO_JWKS_URI:https://accounts.synub.io/.well-known/jwks.json}
+    jwks-uri: ${SSO_JWKS_URL:https://accounts.synub.io/.well-known/jwks.json}
     issuer: ${SSO_ISSUER:https://accounts.synub.io}
     audience: ${SSO_AUDIENCE:synub-billing}
     clock-skew-seconds: ${SSO_CLOCK_SKEW:60}
