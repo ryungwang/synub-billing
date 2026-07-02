@@ -17,6 +17,13 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { EmptyState } from "@/components/empty-state";
 import {
   api,
@@ -150,19 +157,21 @@ export default function TeamPage() {
                   </div>
                   {isOwner && !isMe && (
                     <div className="flex items-center gap-2">
-                      <select
+                      <Select
                         value={m.role}
-                        onChange={(e) =>
-                          api
-                            .changeMemberRole(orgId, m.customerId, e.target.value as OrgRole)
-                            .then(reload)
+                        onValueChange={(v) =>
+                          api.changeMemberRole(orgId, m.customerId, v as OrgRole).then(reload)
                         }
-                        className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs font-medium outline-none focus:border-primary"
                       >
-                        <option value="member">멤버</option>
-                        <option value="billing_manager">결제 관리자</option>
-                        <option value="owner">소유자</option>
-                      </select>
+                        <SelectTrigger className="h-8 w-28 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">멤버</SelectItem>
+                          <SelectItem value="billing_manager">결제 관리자</SelectItem>
+                          <SelectItem value="owner">소유자</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -226,14 +235,15 @@ function InviteForm({ orgId, onInvited }: { orgId: number; onInvited: () => void
           required
           className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as OrgRole)}
-          className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium outline-none focus:border-primary"
-        >
-          <option value="member">멤버</option>
-          <option value="billing_manager">결제 관리자</option>
-        </select>
+        <Select value={role} onValueChange={(v) => setRole(v as OrgRole)}>
+          <SelectTrigger className="h-11 w-32 rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="member">멤버</SelectItem>
+            <SelectItem value="billing_manager">결제 관리자</SelectItem>
+          </SelectContent>
+        </Select>
         <Button type="submit" disabled={busy || !email.trim()}>
           {busy && <Loader2 className="animate-spin" />}
           초대

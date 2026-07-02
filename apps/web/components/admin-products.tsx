@@ -13,6 +13,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { api, type ApiAdminProduct, type ProductMetaInput } from "@/lib/api";
 
 const FIELD =
@@ -235,11 +242,16 @@ function ProductForm({
             </label>
             <label className="flex shrink-0 items-center gap-2 text-sm">
               <span className="whitespace-nowrap text-muted-foreground">노출</span>
-              <select className={FIELD + " w-auto"} value={f.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
-                <option value="active">노출(active)</option>
-                <option value="coming_soon">준비중(coming_soon)</option>
-                <option value="inactive">숨김(inactive)</option>
-              </select>
+              <Select value={f.status ?? "active"} onValueChange={(v) => set("status", v)}>
+                <SelectTrigger className="h-9 w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">노출</SelectItem>
+                  <SelectItem value="coming_soon">준비중</SelectItem>
+                  <SelectItem value="inactive">숨김</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
           </div>
 
