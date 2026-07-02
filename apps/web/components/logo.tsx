@@ -25,7 +25,7 @@ export function Logo({
         width={size}
         height={size}
         priority
-        className="block dark:hidden"
+        className="block h-full w-full object-contain dark:hidden"
       />
       <Image
         src="/brand/synub-symbol-dark.png"
@@ -33,7 +33,7 @@ export function Logo({
         width={size}
         height={size}
         priority
-        className="hidden dark:block"
+        className="hidden h-full w-full object-contain dark:block"
       />
     </span>
   );

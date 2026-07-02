@@ -49,7 +49,7 @@ export function LoginScreen() {
     <div className="flex min-h-dvh items-center justify-center bg-muted/40 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-7 flex flex-col items-center text-center">
-          <Logo className="size-11" />
+          <Logo size={128} className="size-16" />
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
             Synub Billing
           </h1>

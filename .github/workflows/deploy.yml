@@ -69,7 +69,7 @@ jobs:
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           script: |
             cd /home/ubuntu/synub-prod
-            docker compose pull api
-            docker compose up -d api
+            docker compose pull app-api
+            docker compose up -d app-api
             docker compose up -d --force-recreate caddy
             docker image prune -f
