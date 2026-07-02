@@ -28,6 +28,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN groupadd -g 10001 app && useradd -u 10001 -g app -r app
 COPY --from=build /app/apps/api/build/libs/*.jar app.jar
+# 업로드 저장 디렉토리(사업자등록증 등, STORAGE_DIR 기본 ./data/uploads) — 비루트 app 유저가 쓸 수 있게 미리 생성·소유권.
+# 영속화하려면 compose에서 이 경로(/app/data)에 볼륨 마운트(named volume은 이 소유권을 승계).
+RUN mkdir -p /app/data/uploads && chown -R app:app /app/data
 USER app
 
 EXPOSE 8080
