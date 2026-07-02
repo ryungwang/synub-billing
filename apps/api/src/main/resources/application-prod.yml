@@ -81,11 +81,12 @@ app:
     app-base-url: ${APP_BASE_URL}
     smtp-enabled: ${MAIL_SMTP_ENABLED:true}
   sso:
-    # 운영: SSO 공개키(JWKS) 서명검증. 시크릿 디폴트 금지, dev-fallback 반드시 off(토큰 필수).
+    # 운영: SSO 공개키(JWKS) 서명검증. issuer/jwks-uri는 시크릿 아님 → accounts.synub.io 기본값(env로 override).
+    # dev-fallback 반드시 off(토큰 필수).
     mode: ${SSO_MODE:jwks}
     jwt-secret: ${SSO_JWT_SECRET:}
-    jwks-uri: ${SSO_JWKS_URI}
-    issuer: ${SSO_ISSUER}
+    jwks-uri: ${SSO_JWKS_URI:https://accounts.synub.io/.well-known/jwks.json}
+    issuer: ${SSO_ISSUER:https://accounts.synub.io}
     audience: ${SSO_AUDIENCE:synub-billing}
     clock-skew-seconds: ${SSO_CLOCK_SKEW:60}
     dev-fallback-enabled: ${SSO_DEV_FALLBACK:false}
