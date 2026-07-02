@@ -273,6 +273,8 @@ export const api = {
     businessNo: string;
     repName: string;
     openDate: string;
+    corpType: "corp" | "individual";
+    corpNo?: string;
     document: File;
     identityVerificationId?: string;
   }) => {
@@ -281,6 +283,8 @@ export const api = {
     fd.append("businessNo", input.businessNo);
     fd.append("repName", input.repName);
     fd.append("openDate", input.openDate);
+    fd.append("corpType", input.corpType);
+    if (input.corpNo) fd.append("corpNo", input.corpNo);
     fd.append("document", input.document);
     if (input.identityVerificationId)
       fd.append("identityVerificationId", input.identityVerificationId);

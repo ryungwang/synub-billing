@@ -27,6 +27,12 @@ public class Organization {
     @Column(name = "open_date")
     private String openDate;
 
+    @Column(name = "corp_type")
+    private String corpType;   // 'corp'(법인) | 'individual'(개인사업자)
+
+    @Column(name = "corp_no")
+    private String corpNo;     // 법인등록번호(13자리) — 법인만
+
     @Column(name = "rep_verified", nullable = false)
     private boolean repVerified;
 
@@ -54,11 +60,14 @@ public class Organization {
     }
 
     /** 사업자 정보 등록(생성 시). 소유권 심사 전이라 pending. */
-    public void submitBusiness(String businessNo, String repName, String openDate, String businessDoc) {
+    public void submitBusiness(String businessNo, String repName, String openDate, String businessDoc,
+                               String corpType, String corpNo) {
         this.businessNo = businessNo;
         this.repName = repName;
         this.openDate = openDate;
         this.businessDoc = businessDoc;
+        this.corpType = corpType;
+        this.corpNo = corpNo;
         this.verifyStatus = "pending";
         this.rejectReason = null;
     }
@@ -92,6 +101,8 @@ public class Organization {
     public String getBusinessDoc() { return businessDoc; }
     public String getRepName() { return repName; }
     public String getOpenDate() { return openDate; }
+    public String getCorpType() { return corpType; }
+    public String getCorpNo() { return corpNo; }
     public boolean isRepVerified() { return repVerified; }
     public String getOrgCode() { return orgCode; }
     public String getVerifyStatus() { return verifyStatus; }

@@ -37,10 +37,12 @@ public class OrganizationController {
                          @RequestParam String businessNo,
                          @RequestParam String repName,
                          @RequestParam(required = false) String openDate,
+                         @RequestParam(required = false) String corpType,
+                         @RequestParam(required = false) String corpNo,
                          @RequestParam(required = false) String identityVerificationId,
                          @RequestPart("document") MultipartFile document) throws IOException {
-        return organizations.create(name, businessNo, repName, openDate, identityVerificationId,
-                document.getBytes(), document.getOriginalFilename());
+        return organizations.create(name, businessNo, repName, openDate, corpType, corpNo,
+                identityVerificationId, document.getBytes(), document.getOriginalFilename());
     }
 
     // ---- 멤버 ----

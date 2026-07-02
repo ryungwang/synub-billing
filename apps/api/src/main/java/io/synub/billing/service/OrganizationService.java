@@ -50,6 +50,7 @@ public class OrganizationService {
      */
     @Transactional
     public OrgDto create(String name, String businessNo, String repName, String openDate,
+                         String corpType, String corpNo,
                          String identityVerificationId, byte[] docBytes, String docFilename) {
         String trimmed = name == null ? "" : name.trim();
         if (trimmed.isEmpty()) throw new BadRequestException("회사 이름을 입력하세요.");
@@ -65,6 +66,19 @@ public class OrganizationService {
         String rep = repName == null ? "" : repName.trim();
         if (rep.isEmpty()) throw new BadRequestException("대표자명을 입력하세요.");
         String openDt = openDate == null ? "" : openDate.replaceAll("[^0-9]", "");
+
+        // 사업자 구분(법인/개인) + 법인등록번호(법인만, 13자리).
+        String corp = corpType == null ? "" : corpType.trim();
+        if (!"corp".equals(corp) && !"individual".equals(corp)) {
+            throw new BadRequestException("사업자 구분(법인/개인)을 선택하세요.");
+        }
+        String corpN = null;
+        if ("corp".equals(corp)) {
+            corpN = corpNo == null ? "" : corpNo.replaceAll("[^0-9]", "");
+            if (corpN.length() != 13) {
+                throw new BadRequestException("법인등록번호는 13자리 숫자여야 합니다.");
+            }
+        }
 
         // 국세청 진위확인: 번호+대표자+개업일 일치 (apiKey 있을 때). 실패 시 등록 거부.
         if (!businessVerifier.verifyAuthenticity(bizNo, openDt, rep)) {
@@ -94,7 +108,7 @@ public class OrganizationService {
         Customer me = currentUser.resolve();
         String docKey = storage.store(docBytes, docFilename);
         Organization org = new Organization(trimmed);
-        org.submitBusiness(bizNo, rep, openDt, docKey);
+        org.submitBusiness(bizNo, rep, openDt, docKey, corp, corpN);
         org.markRepVerified(); // 본인인증 통과 기록(관리자 심사 참고), verify_status 는 pending 유지
         organizations.save(org);
         memberships.save(new Membership(org.getId(), me.getId(), Membership.OWNER));

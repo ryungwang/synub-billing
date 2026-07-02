@@ -235,6 +235,8 @@ function CreateOrgDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const [name, setName] = React.useState("");
+  const [corpType, setCorpType] = React.useState<"corp" | "individual">("corp");
+  const [corpNo, setCorpNo] = React.useState("");
   const [businessNo, setBusinessNo] = React.useState("");
   const [repName, setRepName] = React.useState("");
   const [openDate, setOpenDate] = React.useState("");
@@ -244,9 +246,10 @@ function CreateOrgDialog({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // 본인인증 필수 — idvId 없으면 제출 불가
+  // 본인인증 필수 — idvId 없으면 제출 불가. 법인이면 법인등록번호 13자리 필수.
   const ready =
-    name.trim() && businessNo.trim() && repName.trim() && openDate.trim() && file && idvId;
+    name.trim() && businessNo.trim() && repName.trim() && openDate.trim() && file && idvId &&
+    (corpType === "individual" || corpNo.replace(/\D/g, "").length === 13);
 
   async function verifyRep() {
     setVerifying(true);
@@ -272,6 +275,8 @@ function CreateOrgDialog({
         businessNo: businessNo.trim(),
         repName: repName.trim(),
         openDate: openDate.trim(),
+        corpType,
+        corpNo: corpType === "corp" ? corpNo.replace(/\D/g, "") : undefined,
         document: file,
         identityVerificationId: idvId ?? undefined,
       });
@@ -307,6 +312,27 @@ function CreateOrgDialog({
               className={INPUT_CLS}
             />
           </Field>
+          <Field label="사업자 구분">
+            <div className="grid grid-cols-2 gap-2">
+              {([["corp", "법인"], ["individual", "개인사업자"]] as const).map(
+                ([v, lb]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setCorpType(v)}
+                    className={cn(
+                      "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors",
+                      corpType === v
+                        ? "border-primary bg-primary-subtle text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {lb}
+                  </button>
+                )
+              )}
+            </div>
+          </Field>
           <Field label="사업자등록번호">
             <input
               value={businessNo}
@@ -317,6 +343,18 @@ function CreateOrgDialog({
               className={INPUT_CLS}
             />
           </Field>
+          {corpType === "corp" && (
+            <Field label="법인등록번호">
+              <input
+                value={corpNo}
+                onChange={(e) => setCorpNo(e.target.value)}
+                placeholder="000000-0000000 (13자리)"
+                inputMode="numeric"
+                required
+                className={INPUT_CLS}
+              />
+            </Field>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Field label="대표자명">
               <input
