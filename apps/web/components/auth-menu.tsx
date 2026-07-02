@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { LogOut, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Loader2, AlertCircle, ShieldCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,6 +56,14 @@ export function AuthMenu() {
               <div className="text-sm font-bold">{label}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
+            <Link
+              href="/account"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 border-b border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              <User className="size-4" />
+              마이페이지
+            </Link>
             <button
               onClick={() => {
                 logout();
