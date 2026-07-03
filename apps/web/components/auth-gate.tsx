@@ -25,6 +25,10 @@ const PUBLIC_PREFIXES = ["/pricing", "/terms", "/privacy", "/refund"];
 // true면 비로그인 방문자에게 '서비스 준비 중'만 노출(운영자 로그인은 유지). 열려면 false.
 const SITE_CLOSED = true;
 
+// 닫힘 기간 중 로그인 허용 계정(external_id) — haru·sky·admin 세 개발사 계정만.
+// 그 외 계정은 로그인해도 차단(Maintenance blocked). 열면(SITE_CLOSED=false) 전체 허용.
+const ALLOWED_SUBS = ["usr_admin_haru", "usr_office_sky", "usr_office_admin"];
+
 /** 로그인 하드게이트. 로그인 전에는 앱(사이드바/데이터)을 렌더하지 않고 로그인 화면만 보여준다. */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -85,6 +89,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (SITE_CLOSED) {
     if (!mounted) return loader;
     if (!user) return <Maintenance />;
+    // 허용 운영자(haru·sky·admin)만 진입. 그 외 로그인 계정은 차단.
+    if (!ALLOWED_SUBS.includes(user.sub)) return <Maintenance blocked />;
     return isPublic ? (
       <PublicShell>{children}</PublicShell>
     ) : (
