@@ -12,12 +12,25 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
+import {
+  subscribeAvatar,
+  avatarSnapshot,
+  loadAvatarOnce,
+} from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 export function AuthMenu() {
   const { user, logout } = useAuth();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const avatarUrl = React.useSyncExternalStore(
+    subscribeAvatar,
+    avatarSnapshot,
+    () => null
+  );
+  React.useEffect(() => {
+    loadAvatarOnce();
+  }, []);
 
   if (!user) {
     return (
@@ -39,8 +52,13 @@ export function AuthMenu() {
         onClick={() => setMenuOpen((v) => !v)}
         className="flex items-center gap-2.5 rounded-full border border-border bg-card py-1 pl-1 pr-3 transition-colors hover:bg-muted"
       >
-        <div className="flex size-7 items-center justify-center rounded-full bg-primary-subtle text-xs font-bold text-primary-subtle-foreground">
-          {initial}
+        <div className="flex size-7 items-center justify-center overflow-hidden rounded-full bg-primary-subtle text-xs font-bold text-primary-subtle-foreground">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt="" className="size-full object-cover" />
+          ) : (
+            initial
+          )}
         </div>
         <div className="hidden text-left leading-tight sm:block">
           <div className="text-[13px] font-bold">{label}</div>

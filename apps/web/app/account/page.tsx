@@ -28,6 +28,12 @@ import {
   subscribeContext,
   contextOrgId,
 } from "@/lib/context";
+import {
+  subscribeAvatar,
+  avatarSnapshot,
+  setAvatarUrl,
+  loadAvatarOnce,
+} from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -52,7 +58,11 @@ const QUICK = [
 export default function AccountPage() {
   const { user, logout } = useAuth();
   const [orgs, setOrgs] = React.useState<ApiOrg[] | null>(null);
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const avatarUrl = React.useSyncExternalStore(
+    subscribeAvatar,
+    avatarSnapshot,
+    () => null
+  );
   const [uploading, setUploading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const ctx = React.useSyncExternalStore(
@@ -64,7 +74,7 @@ export default function AccountPage() {
 
   React.useEffect(() => {
     api.organizations().then(setOrgs).catch(() => setOrgs([]));
-    api.getProfile().then((p) => setAvatarUrl(p.avatarUrl)).catch(() => {});
+    loadAvatarOnce();
   }, []);
 
   if (!user) return null;
