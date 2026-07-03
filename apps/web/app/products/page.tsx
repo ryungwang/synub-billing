@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Users, Sparkles, Loader2 } from "lucide-react";
+import { Check, Users, Sparkles, Loader2, PlayCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,17 @@ export default function ProductsPage() {
                 <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
                   {product.description}
                 </p>
+                {product.demoUrl && (
+                  <a
+                    href={product.demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                  >
+                    <PlayCircle className="size-4" />
+                    데모 체험하기
+                  </a>
+                )}
               </div>
               <div className="hidden shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
                 <Users className="size-3.5" />
