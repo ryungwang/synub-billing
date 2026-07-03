@@ -137,8 +137,12 @@ export function LoginScreen() {
             <span className="text-border">·</span>
             <Link href="/refund" className="hover:text-foreground">환불·청약철회</Link>
           </div>
-          <p className="mt-2 text-muted-foreground/70">
+          <p className="mt-2 leading-relaxed text-muted-foreground/70">
             {COMPANY.legalName} · 대표 {COMPANY.ceo} · 사업자등록번호 {COMPANY.bizRegNo} · 통신판매업 {COMPANY.mailOrderNo}
+            <br />
+            {COMPANY.address}
+            <br />
+            고객센터 {COMPANY.tel} · {COMPANY.email}
           </p>
         </div>
       </div>
