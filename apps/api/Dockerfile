@@ -25,6 +25,8 @@ RUN ./gradlew --no-daemon :apps:api:clean :apps:api:bootJar -x test
 
 # --- run stage: JRE 21 runtime ---
 FROM eclipse-temurin:21-jre
+# 컨테이너 타임존 = 한국(KST) — 로그 타임스탬프 KST. 저장·Instant 직렬화는 UTC 유지(API 계약 불변).
+ENV TZ=Asia/Seoul
 WORKDIR /app
 RUN groupadd -g 10001 app && useradd -u 10001 -g app -r app
 COPY --from=build /app/apps/api/build/libs/*.jar app.jar

@@ -119,21 +119,23 @@ export default function ProductsPage() {
                 <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
                   {product.description}
                 </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 {product.demoUrl && (
                   <a
                     href={product.demoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-3 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-primary-subtle"
                   >
                     <PlayCircle className="size-4" />
                     데모 체험하기
                   </a>
                 )}
-              </div>
-              <div className="hidden shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
-                <Users className="size-3.5" />
-                {product.subscribers.toLocaleString()}명 이용 중
+                <div className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
+                  <Users className="size-3.5" />
+                  {product.subscribers.toLocaleString()}명 이용 중
+                </div>
               </div>
             </div>
 
