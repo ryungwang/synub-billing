@@ -56,7 +56,7 @@ export function LoginScreen() {
             Synub Billing
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            통합계정 하나로 신업의 모든 서비스를 구독·관리하세요.
+            통합계정 하나로 Synub의 모든 서비스를 구독·관리하세요.
           </p>
         </div>
 
@@ -137,13 +137,38 @@ export function LoginScreen() {
             <span className="text-border">·</span>
             <Link href="/refund" className="hover:text-foreground">환불·청약철회</Link>
           </div>
-          <p className="mt-2 leading-relaxed text-muted-foreground/70">
-            {COMPANY.legalName} · 대표 {COMPANY.ceo} · 사업자등록번호 {COMPANY.bizRegNo} · 통신판매업 {COMPANY.mailOrderNo}
-            <br />
-            {COMPANY.address}
-            <br />
-            고객센터 {COMPANY.tel} · {COMPANY.email}
-          </p>
+          <div className="mx-auto mt-4 max-w-sm space-y-1 border-t border-border/60 pt-4 text-muted-foreground/70">
+            {/* 사업자정보 — 각 항목은 줄바꿈되지 않고(번호 중간 끊김 방지) 항목 사이에서만 줄바꿈 */}
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+              {[
+                COMPANY.legalName,
+                `대표 ${COMPANY.ceo}`,
+                `사업자등록번호 ${COMPANY.bizRegNo}`,
+                `통신판매업 ${COMPANY.mailOrderNo}`,
+              ].map((item, i) => (
+                <React.Fragment key={item}>
+                  {i > 0 && <span className="text-border">·</span>}
+                  <span className="whitespace-nowrap">{item}</span>
+                </React.Fragment>
+              ))}
+            </div>
+            <p>{COMPANY.address}</p>
+            <div className="flex flex-wrap items-center justify-center gap-x-2">
+              <a
+                href={`tel:${COMPANY.tel.replace(/[^0-9+]/g, "")}`}
+                className="whitespace-nowrap hover:text-foreground"
+              >
+                고객센터 {COMPANY.tel}
+              </a>
+              <span className="text-border">·</span>
+              <a
+                href={`mailto:${COMPANY.email}`}
+                className="whitespace-nowrap hover:text-foreground"
+              >
+                {COMPANY.email}
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
