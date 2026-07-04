@@ -50,10 +50,10 @@ export function LoginScreen() {
   return (
     // 배경 위에 '2단 분할 전체'가 하나의 떠있는 카드로, 아래에서 슬라이드업하며 등장.
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-gradient-to-b from-muted/20 via-muted/40 to-muted/70 p-4 sm:p-6">
-      <div className="animate-slide-up w-full max-w-4xl overflow-hidden rounded-3xl border border-border/60 shadow-pop">
+      <div className="animate-slide-up w-full max-w-5xl overflow-hidden rounded-3xl border border-border/60 shadow-pop">
         <div className="grid md:grid-cols-2">
           {/* 왼쪽 — 브랜드 패널(데스크톱 전용) */}
-          <div className="dark relative hidden flex-col justify-between bg-gradient-to-br from-[#14233f] to-[#0a0f1c] p-10 text-white md:flex">
+          <div className="dark relative hidden flex-col justify-between bg-gradient-to-br from-[#14233f] to-[#0a0f1c] p-12 text-white md:flex">
             <div className="flex items-center gap-2.5">
               <Logo size={128} className="size-9" />
               <span className="text-lg font-extrabold tracking-tight">Synub Billing</span>
@@ -72,9 +72,9 @@ export function LoginScreen() {
           </div>
 
           {/* 오른쪽 — 로그인 */}
-          <div className="bg-card p-7 sm:p-9">
+          <div className="bg-card p-7 sm:p-10">
             {/* 모바일 브랜드 헤더 */}
-            <div className="mb-6 flex flex-col items-center text-center md:hidden">
+            <div className="mb-5 flex flex-col items-center text-center md:hidden">
               <Logo size={128} className="size-12" />
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Synub Billing</h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -110,7 +110,7 @@ export function LoginScreen() {
               ))}
             </div>
 
-            <form onSubmit={submit} className="space-y-3">
+            <form onSubmit={submit} className="space-y-3.5">
               {mode === "register" && (
                 <Field label="이름" value={name} onChange={setName} type="text" placeholder="홍길동" autoComplete="name" />
               )}
@@ -241,7 +241,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
-        className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
     </label>
   );
