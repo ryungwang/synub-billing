@@ -212,3 +212,23 @@ body {
   background: var(--muted-foreground);
   background-clip: padding-box;
 }
+
+/* 로그인 카드 등장 — 아래에서 슬라이드 업 + 페이드(떠있는 카드). */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-slide-up {
+  animation: slide-up-fade 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up {
+    animation: none;
+  }
+}
