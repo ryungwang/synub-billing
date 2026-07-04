@@ -7,6 +7,7 @@ import io.synub.billing.domain.Subscription;
 import io.synub.billing.dto.Dtos.ContextDto;
 import io.synub.billing.dto.Dtos.ContextsDto;
 import io.synub.billing.dto.Dtos.EntitlementDto;
+import io.synub.billing.dto.Dtos.MySubscriptionDto;
 import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
@@ -88,6 +89,35 @@ public class EntitlementService {
             }
         }
         return new ContextsDto(externalId, out);
+    }
+
+    /**
+     * 현재 사용자가 전 스코프(개인 + 소속 조직 전체)에서 이용 중인 구독 목록 — 제품 둘러보기 배지용.
+     * 현재 컨텍스트와 무관하게 "개인으로 구독 중"·"○○(회사)로 구독 중"을 모두 보여주기 위함.
+     * 예약 해지 후 기간이 지난 건은 제외(entitlement와 동일 판정).
+     */
+    @Transactional(readOnly = true)
+    public List<MySubscriptionDto> mine() {
+        Customer me = customers.findByExternalId(currentUser.externalId()).orElse(null);
+        if (me == null) return List.of();
+        List<MySubscriptionDto> out = new ArrayList<>();
+        for (Subscription s : subscriptions
+                .findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(Owner.CUSTOMER, me.getId())) {
+            if (!isEntitled(s)) continue;
+            out.add(new MySubscriptionDto(s.getPlan().getProduct().getServiceCode(),
+                    s.getPlan().getName(), "personal", null, s.isComplimentary()));
+        }
+        for (Membership m : memberships.findByCustomerId(me.getId())) {
+            Organization org = organizations.findById(m.getOrganizationId()).orElse(null);
+            if (org == null) continue;
+            for (Subscription s : subscriptions
+                    .findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(Owner.ORGANIZATION, org.getId())) {
+                if (!isEntitled(s)) continue;
+                out.add(new MySubscriptionDto(s.getPlan().getProduct().getServiceCode(),
+                        s.getPlan().getName(), "org", org.getName(), s.isComplimentary()));
+            }
+        }
+        return out;
     }
 
     /** 선택된 컨텍스트에 해당하는 구독 후보. 알 수 없거나 권한 없는 컨텍스트는 빈 목록(fail-closed). */

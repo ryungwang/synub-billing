@@ -57,6 +57,13 @@ public final class Dtos {
     /** 특정 사용자가 가진 컨텍스트 목록(개인 + 소속 조직들). 제품 컨텍스트 스위처의 소스. */
     public record ContextsDto(String customer, List<ContextDto> contexts) {}
 
+    /**
+     * 현재 사용자가 "전 스코프(개인 + 소속 조직 전체)"에서 이용 중인 구독 1건 — 제품 둘러보기 배지용.
+     * 결제 상세(금액·카드)는 제외하고 카탈로그 표시에 필요한 것만. scope: "personal" | "org".
+     */
+    public record MySubscriptionDto(
+            String serviceCode, String plan, String scope, String orgName, boolean complimentary) {}
+
     // ---- 대시보드 ----
     public record SpendPointDto(String month, long amount) {}
 

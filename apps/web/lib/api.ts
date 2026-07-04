@@ -74,6 +74,15 @@ export interface ApiSubscription {
   complimentary: boolean;
 }
 
+/** 전 스코프(개인+소속 조직) 이용 중 구독 — 제품 둘러보기 배지용. */
+export interface ApiMySubscription {
+  serviceCode: string;
+  plan: string;
+  scope: "personal" | "org";
+  orgName: string | null;
+  complimentary: boolean;
+}
+
 export interface ApiPayment {
   id: number;
   serviceCode: string;
@@ -432,6 +441,7 @@ export const api = {
     http<ApiSubscription>(`/subscriptions/${id}/cancel`, { method: "POST" }),
   resumeSubscription: (id: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/resume`, { method: "POST" }),
+  mySubscriptions: () => http<ApiMySubscription[]>("/subscriptions/mine"),
   changeSeats: (id: number, seats: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/seats`, {
       method: "POST",

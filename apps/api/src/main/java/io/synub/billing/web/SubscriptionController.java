@@ -1,6 +1,7 @@
 package io.synub.billing.web;
 
 import io.synub.billing.dto.Dtos.*;
+import io.synub.billing.service.EntitlementService;
 import io.synub.billing.service.IdempotencyService;
 import io.synub.billing.service.SubscriptionService;
 import jakarta.validation.Valid;
@@ -15,15 +16,24 @@ public class SubscriptionController {
 
     private final SubscriptionService service;
     private final IdempotencyService idempotency;
+    private final EntitlementService entitlements;
 
-    public SubscriptionController(SubscriptionService service, IdempotencyService idempotency) {
+    public SubscriptionController(SubscriptionService service, IdempotencyService idempotency,
+                                  EntitlementService entitlements) {
         this.service = service;
         this.idempotency = idempotency;
+        this.entitlements = entitlements;
     }
 
     @GetMapping
     public List<SubscriptionDto> list() {
         return service.list();
+    }
+
+    /** 전 스코프(개인 + 소속 조직 전체) 이용 중 구독 — 제품 둘러보기 배지용. 현재 컨텍스트와 무관. */
+    @GetMapping("/mine")
+    public List<MySubscriptionDto> mine() {
+        return entitlements.mine();
     }
 
     /** 구독 생성(+첫 결제). Idempotency-Key 헤더로 이중 청구 방지. */

@@ -12,7 +12,7 @@ import {
   type CheckoutTarget,
 } from "@/components/checkout-dialog";
 import { ProductIcon } from "@/components/product-icon";
-import { api, type ApiProduct, type ApiPlan, type ApiSubscription } from "@/lib/api";
+import { api, type ApiProduct, type ApiPlan, type ApiMySubscription } from "@/lib/api";
 import { rawContext, subscribeContext, contextOrgId } from "@/lib/context";
 import { cn, formatKRW } from "@/lib/utils";
 
@@ -22,28 +22,26 @@ export default function ProductsPage() {
   const [yearly, setYearly] = React.useState(false);
   const [target, setTarget] = React.useState<CheckoutTarget | null>(null);
   const [open, setOpen] = React.useState(false);
-  const [subs, setSubs] = React.useState<ApiSubscription[] | null>(null);
+  const [mine, setMine] = React.useState<ApiMySubscription[] | null>(null);
   const ctx = React.useSyncExternalStore(subscribeContext, rawContext, () => "personal");
   const isOrg = contextOrgId(ctx) !== null;
 
   React.useEffect(() => {
     api.products().then(setProducts).catch((e) => setError(e.message));
+    // 내 구독은 전 스코프(개인 + 소속 조직 전체) — 현재 컨텍스트와 무관하게 한 번만 조회.
+    api.mySubscriptions().then(setMine).catch(() => setMine([]));
   }, []);
 
-  // 내 구독 현황 — 현재 컨텍스트(개인/회사) 기준. 컨텍스트 바뀌면 다시 조회.
-  React.useEffect(() => {
-    api.subscriptions().then(setSubs).catch(() => setSubs([]));
-  }, [ctx]);
-
-  // serviceCode → 현재 컨텍스트에서 이용 중(active/past_due)인 구독.
-  const mySubByService = React.useMemo(() => {
-    const m = new Map<string, ApiSubscription>();
-    for (const s of subs ?? []) {
-      if (s.status !== "active" && s.status !== "past_due") continue;
-      if (!m.has(s.serviceCode)) m.set(s.serviceCode, s);
+  // serviceCode → 전 스코프 이용 중 구독들(개인·조직 각각). 여러 스코프 동시 가능.
+  const mineByService = React.useMemo(() => {
+    const m = new Map<string, ApiMySubscription[]>();
+    for (const s of mine ?? []) {
+      const arr = m.get(s.serviceCode) ?? [];
+      arr.push(s);
+      m.set(s.serviceCode, arr);
     }
     return m;
-  }, [subs]);
+  }, [mine]);
 
   function subscribe(product: ApiProduct, plan: ApiPlan) {
     setTarget({
@@ -115,7 +113,8 @@ export default function ProductsPage() {
 
       <div className="space-y-10">
         {products?.map((product) => {
-          const mySub = mySubByService.get(product.serviceCode) ?? null;
+          const mineHere = mineByService.get(product.serviceCode) ?? [];
+          const subscribed = mineHere.length > 0;
           return (
           <section key={product.serviceCode}>
             <div className="mb-4 flex items-start gap-3.5">
@@ -129,12 +128,13 @@ export default function ProductsPage() {
                     <Badge variant="outline">{product.category}</Badge>
                   )}
                   {product.orgOnly && <Badge>조직 전용</Badge>}
-                  {mySub && (
-                    <Badge variant="success">
+                  {mineHere.map((e, i) => (
+                    <Badge key={i} variant="success">
                       <Check className="size-3" />
-                      구독 중{mySub.complimentary ? " · 무상" : ""}
+                      {e.scope === "org" ? `${e.orgName} 구독 중` : "개인 구독 중"}
+                      {e.complimentary ? " · 무상" : ""}
                     </Badge>
-                  )}
+                  ))}
                   {product.status === "coming_soon" && (
                     <Badge variant="outline" className="border-primary/40 text-primary">
                       <Sparkles className="size-3" /> 곧 출시
@@ -175,11 +175,12 @@ export default function ProductsPage() {
                 );
                 const useYear = yearly && !!yearlyPlan && !perSeat;
                 const active = useYear && yearlyPlan ? yearlyPlan : plan;
-                // 이 카드(티어)가 현재 이용 중인 플랜인지 — 월간/연간 이름 둘 다 대조.
-                const isCurrent =
-                  !!mySub &&
-                  (mySub.plan === plan.name ||
-                    (!!yearlyPlan && mySub.plan === yearlyPlan.name));
+                // 이 카드(티어)를 어느 스코프든 이용 중인지 — 월간/연간 이름 둘 다 대조.
+                const isCurrent = mineHere.some(
+                  (e) =>
+                    e.plan === plan.name ||
+                    (!!yearlyPlan && e.plan === yearlyPlan.name)
+                );
                 const cycleLabel = perSeat
                   ? "인 · 월"
                   : active.cycle === "yearly"
@@ -258,7 +259,7 @@ export default function ProductsPage() {
                       >
                         <Check /> 이용 중
                       </Button>
-                    ) : mySub ? (
+                    ) : subscribed ? (
                       <Button
                         className="mt-6 w-full"
                         size="lg"
@@ -288,7 +289,7 @@ export default function ProductsPage() {
                           구독 관리에서 플랜 변경·해지
                         </Link>
                       </p>
-                    ) : product.orgOnly && !isOrg ? (
+                    ) : !subscribed && product.orgOnly && !isOrg ? (
                       <p className="mt-2 text-center text-[11px] text-muted-foreground">
                         상단에서 회사로 전환하면 구독할 수 있어요
                       </p>
