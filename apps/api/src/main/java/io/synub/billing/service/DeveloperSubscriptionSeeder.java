@@ -118,6 +118,7 @@ public class DeveloperSubscriptionSeeder {
             created++;
             log.info("개발사 org 무상 구독 생성: 제품={} 플랜={}", p.getName(), sub.getPlan().getName());
         }
+        supersedeRedundant(Owner.ORGANIZATION, org.getId());
         return created;
     }
 
@@ -142,8 +143,37 @@ public class DeveloperSubscriptionSeeder {
                 log.info("개발자 개인 무상 구독 생성: 개발자={} 제품={} 플랜={}",
                         dev.getExternalId(), p.getName(), sub.getPlan().getName());
             }
+            supersedeRedundant(Owner.CUSTOMER, dev.getId());
         }
         return created;
+    }
+
+    /**
+     * 같은 소유 스코프·제품에 무상 최고플랜 구독이 있으면, 그 제품의 다른 일반(비무상) active/past_due 구독을
+     * 해지(supersede)해 구독 목록 중복을 없앤다. 개발사 스코프(org·개발자 개인)만 대상이라 일반 사용자엔 영향 없음.
+     * (예: 개발자가 예전에 눌러둔 post-flow Free 구독이 무상 Pro 옆에 나란히 뜨는 것 방지.)
+     */
+    private void supersedeRedundant(String ownerType, Long ownerId) {
+        List<Subscription> subs = subscriptions.findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(ownerType, ownerId);
+        Set<Long> compProductIds = subs.stream()
+                .filter(Subscription::isComplimentary)
+                .filter(this::isActiveOrPastDue)
+                .map(s -> s.getPlan().getProduct().getId())
+                .collect(Collectors.toSet());
+        if (compProductIds.isEmpty()) return;
+        for (Subscription s : subs) {
+            if (s.isComplimentary() || !isActiveOrPastDue(s)) continue;
+            if (!compProductIds.contains(s.getPlan().getProduct().getId())) continue;
+            s.setStatus("canceled");
+            s.setCanceledAt(Instant.now());
+            s.setCancelAtPeriodEnd(true);
+            log.info("무상 최고플랜에 의해 일반 구독 정리(해지): owner={}:{} 제품={} 플랜={}",
+                    ownerType, ownerId, s.getPlan().getProduct().getName(), s.getPlan().getName());
+        }
+    }
+
+    private boolean isActiveOrPastDue(Subscription s) {
+        return "active".equals(s.getStatus()) || "past_due".equals(s.getStatus());
     }
 
     /** 설정된 개발자 external_id 를 실제 customer 로 해석(미존재는 제외). */
