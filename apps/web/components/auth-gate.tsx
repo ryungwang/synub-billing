@@ -29,6 +29,9 @@ const SITE_CLOSED = true;
 // 그 외 계정은 로그인해도 차단(Maintenance blocked). 열면(SITE_CLOSED=false) 전체 허용.
 const ALLOWED_SUBS = ["usr_admin_haru", "usr_office_sky", "usr_office_admin"];
 
+// 닫힘 기간 테스트용 지정 일반 계정 — 로그인 아이디(=토큰 email)로 허용. deer 계정 하나.
+const ALLOWED_EMAILS = ["deer"];
+
 /** 로그인 하드게이트. 로그인 전에는 앱(사이드바/데이터)을 렌더하지 않고 로그인 화면만 보여준다. */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -90,7 +93,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!mounted) return loader;
     if (!user) return <Maintenance />;
     // 허용 운영자(haru·sky·admin)만 진입. 그 외 로그인 계정은 차단.
-    if (!ALLOWED_SUBS.includes(user.sub)) return <Maintenance blocked />;
+    if (!ALLOWED_SUBS.includes(user.sub) && !ALLOWED_EMAILS.includes(user.email))
+      return <Maintenance blocked />;
     return isPublic ? (
       <PublicShell>{children}</PublicShell>
     ) : (
