@@ -72,6 +72,16 @@ export default function SubscriptionsPage() {
     }
   }
 
+  async function resume(id: number) {
+    setBusy(true);
+    try {
+      await api.resumeSubscription(id);
+      reload();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -98,6 +108,10 @@ export default function SubscriptionsPage() {
         {subs?.map((s) => {
           const isCanceled = s.status === "canceled";
           const isPastDue = s.status === "past_due";
+          // 예약 해지(다음 결제일까지 이용 후 종료). status는 active로 유지되고 플래그만 세팅됨.
+          const scheduled =
+            s.cancelAtPeriodEnd && !s.complimentary && !isCanceled;
+          const ending = scheduled || isCanceled;
           const planList =
             products.find((p) => p.serviceCode === s.serviceCode)?.plans ?? [];
           return (
@@ -115,6 +129,12 @@ export default function SubscriptionsPage() {
                         {s.plan}
                       </span>
                       <SubscriptionStatusBadge status={s.status} />
+                      {scheduled && (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-warning/40 px-1.5 py-0.5 text-[11px] font-bold text-warning-foreground">
+                          <Hourglass className="size-3" />
+                          해지 예정
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 text-[13px] text-muted-foreground">
                       {s.cycle === "yearly" ? "연간 구독" : "월간 구독"} ·{" "}
@@ -156,8 +176,8 @@ export default function SubscriptionsPage() {
                       value={formatDate(s.startedAt)}
                     />
                     <Fact
-                      icon={isCanceled ? Hourglass : CalendarClock}
-                      label={isCanceled ? "이용 종료" : "다음 결제"}
+                      icon={ending ? Hourglass : CalendarClock}
+                      label={ending ? "이용 종료" : "다음 결제"}
                       value={formatDate(s.nextBillingDate)}
                     />
                     <Fact icon={CreditCard} label="결제수단" value={s.card} />
@@ -169,7 +189,7 @@ export default function SubscriptionsPage() {
                   </dl>
                 </div>
 
-                {s.pricingType === "per_seat" && !isCanceled && (
+                {s.pricingType === "per_seat" && !ending && (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                     <div className="text-[13px]">
                       <span className="font-semibold">좌석 {s.seats}석</span>
@@ -195,32 +215,49 @@ export default function SubscriptionsPage() {
                   </div>
                 ) : (
                   <>
-                    {isPastDue && (
-                      <div className="mr-auto flex items-center gap-1.5 text-[13px] font-medium text-warning-foreground">
-                        <AlertTriangle className="size-4 text-warning" />
-                        결제 실패 — 재시도 예정
-                      </div>
-                    )}
-                    {isCanceled && (
-                      <div className="mr-auto text-[13px] text-muted-foreground">
-                        {formatDate(s.nextBillingDate)}까지 이용 후 자동 종료됩니다.
-                      </div>
-                    )}
-                    {!isPastDue && !isCanceled && (
-                      <div className="mr-auto text-[13px] text-muted-foreground">
-                        다음 청구 예정{" "}
-                        <span className="font-semibold text-foreground tnum">
-                          {formatKRW(s.amount)}
-                        </span>
-                      </div>
-                    )}
-                    {isCanceled ? (
-                      <Button variant="subtle" size="sm" disabled>
-                        <RotateCcw />
-                        해지 예정
-                      </Button>
+                    {scheduled ? (
+                      <>
+                        <div className="mr-auto text-[13px] text-muted-foreground">
+                          <span className="font-semibold text-foreground">
+                            {formatDate(s.nextBillingDate)}
+                          </span>
+                          까지 이용 후 자동 종료 · 추가 청구 없음
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => resume(s.id)}
+                          disabled={busy}
+                        >
+                          <RotateCcw />
+                          해지 철회
+                        </Button>
+                      </>
+                    ) : isCanceled ? (
+                      <>
+                        <div className="mr-auto text-[13px] text-muted-foreground">
+                          해지되어 종료된 구독입니다.
+                        </div>
+                        <Button variant="subtle" size="sm" disabled>
+                          <Ban />
+                          해지됨
+                        </Button>
+                      </>
                     ) : (
                       <>
+                        {isPastDue ? (
+                          <div className="mr-auto flex items-center gap-1.5 text-[13px] font-medium text-warning-foreground">
+                            <AlertTriangle className="size-4 text-warning" />
+                            결제 실패 — 재시도 예정
+                          </div>
+                        ) : (
+                          <div className="mr-auto text-[13px] text-muted-foreground">
+                            다음 청구 예정{" "}
+                            <span className="font-semibold text-foreground tnum">
+                              {formatKRW(s.amount)}
+                            </span>
+                          </div>
+                        )}
                         <ChangePlanDialog
                           sub={s}
                           plans={planList}

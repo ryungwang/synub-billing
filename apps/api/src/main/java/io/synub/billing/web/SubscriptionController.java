@@ -41,6 +41,12 @@ public class SubscriptionController {
         return service.cancel(id);
     }
 
+    /** 해지 철회 — 예약된 해지를 되돌린다(기간 만료 전). */
+    @PostMapping("/{id}/resume")
+    public SubscriptionDto resume(@PathVariable Long id) {
+        return service.resume(id);
+    }
+
     @PostMapping("/{id}/change-plan")
     public SubscriptionDto changePlan(@PathVariable Long id,
                                       @Valid @RequestBody ChangePlanRequest req) {

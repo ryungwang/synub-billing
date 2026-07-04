@@ -430,6 +430,8 @@ export const api = {
     }),
   cancelSubscription: (id: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/cancel`, { method: "POST" }),
+  resumeSubscription: (id: number) =>
+    http<ApiSubscription>(`/subscriptions/${id}/resume`, { method: "POST" }),
   changeSeats: (id: number, seats: number) =>
     http<ApiSubscription>(`/subscriptions/${id}/seats`, {
       method: "POST",

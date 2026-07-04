@@ -105,7 +105,13 @@ public class SubscriptionService {
         return mapper.toSubscription(sub);
     }
 
-    /** 해지 — 기간 만료 시 종료(권장). (PRD §3.4) */
+    /**
+     * 해지 예약 — 다음 결제일까지 이용, 그 후 자동 종료. (PRD §3.4)
+     * status는 active로 유지하고 cancel_at_period_end만 세팅한다. 실제 접근 종료는
+     * entitlement가 "예약해지 + 기간경과"로 판정하므로 스케줄러 없이도 다음 결제일에 끊긴다.
+     * 즉시 status=canceled로 바꾸지 않으므로 "기간 만료 시 종료" 약속과 동작이 일치한다.
+     * 철회({@link #resume})로 되돌릴 수 있다.
+     */
     @Transactional
     public SubscriptionDto cancel(Long id) {
         Subscription sub = findOwned(id);
@@ -113,12 +119,33 @@ public class SubscriptionService {
             throw new BadRequestException("개발사 무상 구독은 해지할 수 없습니다.");
         }
         if ("canceled".equals(sub.getStatus())) {
-            throw new BadRequestException("이미 해지된 구독입니다.");
+            throw new BadRequestException("이미 종료된 구독입니다.");
         }
-        sub.setStatus("canceled");
-        sub.setCanceledAt(Instant.now());
+        if (sub.isCancelAtPeriodEnd()) {
+            throw new BadRequestException("이미 해지 예약된 구독입니다.");
+        }
         sub.setCancelAtPeriodEnd(true);
-        webhooks.fire(sub, SubscriptionWebhooks.CANCELED);
+        sub.setCanceledAt(Instant.now());
+        // 웹훅은 발화하지 않는다 — 아직 이용 중(다음 결제일까지)이라 제품이 즉시 차단하면 안 됨.
+        // 제품은 entitlement(단일 진실)로 종료 시점을 판정한다.
+        return mapper.toSubscription(sub);
+    }
+
+    /** 해지 철회 — 예약된 해지를 되돌려 자동 갱신 상태로 복귀. 기간 만료 전에만 가능. */
+    @Transactional
+    public SubscriptionDto resume(Long id) {
+        Subscription sub = findOwned(id);
+        if (!sub.isCancelAtPeriodEnd() || sub.isComplimentary()) {
+            throw new BadRequestException("해지 예약 상태가 아닙니다.");
+        }
+        if ("canceled".equals(sub.getStatus())) {
+            throw new BadRequestException("이미 종료된 구독은 재개할 수 없습니다. 다시 구독해주세요.");
+        }
+        if (LocalDate.now(DtoMapper.KST).isAfter(sub.getNextBillingDate())) {
+            throw new BadRequestException("이용 기간이 만료되어 재개할 수 없습니다. 다시 구독해주세요.");
+        }
+        sub.setCancelAtPeriodEnd(false);
+        sub.setCanceledAt(null);
         return mapper.toSubscription(sub);
     }
 

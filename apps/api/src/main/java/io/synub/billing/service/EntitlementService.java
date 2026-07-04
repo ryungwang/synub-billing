@@ -14,6 +14,7 @@ import io.synub.billing.repo.SubscriptionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,7 +128,13 @@ public class EntitlementService {
     }
 
     private boolean isEntitled(Subscription s) {
-        return "active".equals(s.getStatus()) || "past_due".equals(s.getStatus());
+        if (!"active".equals(s.getStatus()) && !"past_due".equals(s.getStatus())) return false;
+        // 예약 해지(cancel_at_period_end)면 다음 결제일 경과 시 종료 — 스케줄러 없이 판정 시점에 계산.
+        if (s.isCancelAtPeriodEnd() && s.getNextBillingDate() != null
+                && LocalDate.now(DtoMapper.KST).isAfter(s.getNextBillingDate())) {
+            return false;
+        }
+        return true;
     }
 
     private EntitlementDto notEntitled() {
