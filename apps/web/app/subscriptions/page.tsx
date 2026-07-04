@@ -16,6 +16,9 @@ import {
   Minus,
   Plus,
   Sparkles,
+  Info,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -387,13 +390,26 @@ function ChangePlanDialog({
         <DialogHeader>
           <DialogTitle>플랜 변경</DialogTitle>
           <DialogDescription>
-            {sub.product}의 다른 플랜으로 변경합니다. 변경 사항은 다음 결제일부터
-            적용돼요.
+            {sub.product}의 다른 플랜으로 변경합니다.
           </DialogDescription>
         </DialogHeader>
+        {/* 반영 시점 안내 — 즉시 정산 없이 다음 결제일부터 새 플랜 적용(업/다운 공통). */}
+        <div className="flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0 text-foreground/70" />
+          <div>
+            변경은 <span className="font-semibold text-foreground">다음 결제일
+            {sub.nextBillingDate ? ` (${formatDate(sub.nextBillingDate)})` : ""}
+            부터</span> 적용됩니다. 그때까지는 현재 플랜을 그대로 이용하고,
+            지금 추가 청구나 환불은 없어요.
+          </div>
+        </div>
         <div className="space-y-2">
           {plans.map((p) => {
             const current = p.name === sub.plan;
+            const currentAmount =
+              plans.find((x) => x.name === sub.plan)?.amount ?? sub.amount;
+            const isUpgrade = !current && p.amount > currentAmount;
+            const isDowngrade = !current && p.amount < currentAmount;
             return (
               <div
                 key={p.id}
@@ -410,6 +426,18 @@ function ChangePlanDialog({
                     {current && (
                       <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
                         현재
+                      </span>
+                    )}
+                    {isUpgrade && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-bold text-success-foreground">
+                        <ArrowUpRight className="size-3" />
+                        업그레이드
+                      </span>
+                    )}
+                    {isDowngrade && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                        <ArrowDownRight className="size-3" />
+                        다운그레이드
                       </span>
                     )}
                   </div>
