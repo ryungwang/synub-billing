@@ -54,9 +54,9 @@ export function LoginScreen() {
         <div className="grid md:min-h-[34rem] md:grid-cols-2">
           {/* 왼쪽 — 브랜드 패널(데스크톱 전용) */}
           <div className="dark relative hidden flex-col justify-between bg-gradient-to-br from-[#14233f] to-[#0a0f1c] p-12 text-white md:flex">
-            <div className="flex items-center gap-2.5">
-              <Logo size={128} className="size-9" />
-              <span className="text-lg font-extrabold tracking-tight">Synub Billing</span>
+            <div className="flex items-center gap-3">
+              <Logo size={128} className="size-12" />
+              <span className="text-2xl font-extrabold tracking-tight">Synub Billing</span>
             </div>
             <div className="max-w-xs">
               <h2 className="text-[26px] font-extrabold leading-tight tracking-tight">
