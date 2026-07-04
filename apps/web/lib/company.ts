@@ -4,7 +4,8 @@
  * 값이 바뀌면 이 파일만 고치면 된다.
  */
 export const COMPANY = {
-  legalName: "주식회사 신업",
+  // 법적 상호: 국문 등록상호 + 영문상호(영문 사업자등록증) 병기. 전자상거래법 표시란·PG 심사용.
+  legalName: "주식회사 신업 (Synub Inc.)",
   enName: "Synub Inc.",
   serviceName: "Synub Billing",
   /** 대표자 — 전자상거래 표시는 사업자등록증(세무서) 기준 단독대표. */
