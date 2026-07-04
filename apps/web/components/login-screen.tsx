@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/lib/auth";
@@ -51,7 +51,7 @@ export function LoginScreen() {
     // 배경 위에 '2단 분할 전체'가 하나의 떠있는 카드로, 아래에서 슬라이드업하며 등장.
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-gradient-to-b from-muted/20 via-muted/40 to-muted/70 p-4 sm:p-6">
       <div className="animate-slide-up w-full max-w-5xl overflow-hidden rounded-3xl border border-border/60 shadow-pop">
-        <div className="grid md:min-h-[34rem] md:grid-cols-2">
+        <div className="grid md:min-h-[38rem] md:grid-cols-2">
           {/* 왼쪽 — 브랜드 패널(데스크톱 전용) */}
           <div className="dark relative hidden flex-col justify-between bg-gradient-to-br from-[#14233f] to-[#0a0f1c] p-12 text-white md:flex">
             <div className="flex items-center gap-3">
@@ -67,6 +67,20 @@ export function LoginScreen() {
               <p className="mt-3 text-sm leading-relaxed text-white/60">
                 구독·결제·플랜 변경까지 — Synub 하나로 관리하세요.
               </p>
+              <ul className="mt-8 space-y-3.5">
+                {[
+                  "여러 SaaS를 계정 하나로",
+                  "카드 한 장으로 결제·청구 관리",
+                  "언제든 플랜 변경·해지",
+                ].map((t) => (
+                  <li key={t} className="flex items-center gap-3 text-sm text-white/85">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <Check className="size-3 text-white/80" />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
             <Fineprint tone="dark" align="left" />
           </div>
