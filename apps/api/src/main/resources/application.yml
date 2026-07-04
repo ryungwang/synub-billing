@@ -30,8 +30,10 @@ server:
   port: 8088
 
 app:
-  # 연동 규칙: 개발사(운영사) org 코드 — 등록된 모든 제품의 최고 플랜을 무상 자동 구독(기동 시). 빈값이면 비활성.
+  # 연동 규칙: 개발사(운영사) org 코드 — 조직 전용 제품의 최고 플랜을 org 소유로 무상 자동 구독(기동 시). 빈값이면 비활성.
   developer-org-code: ${DEVELOPER_ORG_CODE:SH-SYNUBGROUP}
+  # 개발자 개인 계정(external_id, 쉼표구분) — 개인 제품(org_only=false)의 최고 플랜을 개인 소유로 무상 자동 구독. haru·sky.
+  developer-external-ids: ${DEVELOPER_EXTERNAL_IDS:usr_admin_haru,usr_office_sky}
   cors:
     allowed-origins: "http://localhost:3100,http://localhost:3000"
   billing:
