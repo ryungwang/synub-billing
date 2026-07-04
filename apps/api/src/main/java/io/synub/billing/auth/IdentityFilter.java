@@ -37,7 +37,7 @@ public class IdentityFilter extends OncePerRequestFilter {
 
     /** 사용자 신원이 없어도 되는 경로(서버간 호출·웹훅·헬스체크). */
     private static final String[] PUBLIC_PREFIXES = {"/internal", "/webhooks", "/actuator",
-            "/api/entitlements", "/api/usage", "/api/orgs",
+            "/api/entitlements", "/api/contexts", "/api/usage", "/api/orgs",
             // 제품 카탈로그(요금)는 마케팅용 공개 정보 — 로그인 전 요금 페이지(/pricing) 서버렌더가 조회.
             "/products",
             // 아바타 이미지 — 등록된 avatar_key(UUID)만 서빙, <img src>로 로드하므로 공개.

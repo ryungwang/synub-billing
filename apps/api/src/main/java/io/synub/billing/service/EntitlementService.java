@@ -2,9 +2,11 @@ package io.synub.billing.service;
 
 import io.synub.billing.domain.Customer;
 import io.synub.billing.domain.Membership;
-import io.synub.billing.domain.Subscription;
-import io.synub.billing.dto.Dtos.EntitlementDto;
 import io.synub.billing.domain.Organization;
+import io.synub.billing.domain.Subscription;
+import io.synub.billing.dto.Dtos.ContextDto;
+import io.synub.billing.dto.Dtos.ContextsDto;
+import io.synub.billing.dto.Dtos.EntitlementDto;
 import io.synub.billing.repo.CustomerRepository;
 import io.synub.billing.repo.MembershipRepository;
 import io.synub.billing.repo.OrganizationRepository;
@@ -16,8 +18,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 제품용 entitlement 조회 (PRD §6.2) — 제품이 "이 유저가 이 서비스 이용 권한이 있는지" 확인.
- * 권한 = 개인 구독 OR 소속 조직의 구독(둘 중 하나라도 active/past_due).
+ * 제품용 entitlement 조회 (PRD §6.2) — 제품이 "이 유저가 이 서비스를, 어떤 플랜으로 이용할 권한이 있는지" 확인.
+ *
+ * <p><b>컨텍스트 인지(context-aware).</b> 한 사람이 개인 구독과 조직 구독을 동시에 가질 수 있으므로
+ * (예: 개인 Basic + 회사 Pro), 제품은 사용자가 현재 어떤 컨텍스트로 서비스를 쓰는지 함께 넘긴다.
+ * <ul>
+ *   <li>{@code context=null/빈값} — 레거시: 개인 + 모든 소속 조직 중 첫 active(개인 우선). 하위호환용.</li>
+ *   <li>{@code context="personal"} — 개인 소유 구독만 판정.</li>
+ *   <li>{@code context="org:{orgCode}"} — 해당 조직 소유 구독만 판정. 미소속이면 fail-closed(권한 없음).</li>
+ * </ul>
+ * 제품은 {@link #listContexts}로 사용자의 컨텍스트 목록(개인 + 소속 조직)을 받아 스위처를 그리고,
+ * 선택된 컨텍스트 문자열을 그대로 이 API에 전달한다.
  */
 @Service
 public class EntitlementService {
@@ -38,31 +49,89 @@ public class EntitlementService {
         this.currentUser = currentUser;
     }
 
+    /** 하위호환 오버로드 — 컨텍스트 미지정(개인 + 모든 조직). */
     @Transactional(readOnly = true)
     public EntitlementDto check(String customerExternalId, String serviceCode) {
-        String externalId = (customerExternalId == null || customerExternalId.isBlank())
-                ? currentUser.externalId() : customerExternalId;
+        return check(customerExternalId, serviceCode, null);
+    }
 
-        Customer customer = customers
-                .findByExternalId(externalId)
-                .orElse(null);
-        if (customer == null) {
-            return new EntitlementDto(false, null, null, List.of(), null);
-        }
+    /** 컨텍스트 인지 entitlement 판정. */
+    @Transactional(readOnly = true)
+    public EntitlementDto check(String customerExternalId, String serviceCode, String context) {
+        Customer customer = resolveCustomer(customerExternalId);
+        if (customer == null) return notEntitled();
 
-        // 후보 = 개인 소유 구독 + 소속 조직 소유 구독
-        List<Subscription> candidates = new ArrayList<>(
-                subscriptions.findByOwnerAndService(Owner.CUSTOMER, customer.getId(), serviceCode));
-        for (Membership m : memberships.findByCustomerId(customer.getId())) {
-            candidates.addAll(subscriptions.findByOwnerAndService(
-                    Owner.ORGANIZATION, m.getOrganizationId(), serviceCode));
-        }
-
-        return candidates.stream()
-                .filter(s -> "active".equals(s.getStatus()) || "past_due".equals(s.getStatus()))
+        return candidatesForContext(customer, serviceCode, context).stream()
+                .filter(this::isEntitled)
                 .findFirst()
                 .map(this::toEntitlement)
-                .orElse(new EntitlementDto(false, null, null, List.of(), null));
+                .orElse(notEntitled());
+    }
+
+    /** 제품 컨텍스트 스위처의 소스 — 사용자의 개인 + 소속 조직 컨텍스트 목록. */
+    @Transactional(readOnly = true)
+    public ContextsDto listContexts(String customerExternalId) {
+        String externalId = (customerExternalId == null || customerExternalId.isBlank())
+                ? currentUser.externalId() : customerExternalId;
+        Customer customer = customers.findByExternalId(externalId).orElse(null);
+
+        List<ContextDto> out = new ArrayList<>();
+        // 개인 컨텍스트는 항상 존재.
+        out.add(new ContextDto("personal", "personal", null, "개인", null));
+        if (customer != null) {
+            for (Membership m : memberships.findByCustomerId(customer.getId())) {
+                Organization org = organizations.findById(m.getOrganizationId()).orElse(null);
+                if (org == null) continue;
+                out.add(new ContextDto("org", "org:" + org.getOrgCode(),
+                        org.getOrgCode(), org.getName(), m.getRole()));
+            }
+        }
+        return new ContextsDto(externalId, out);
+    }
+
+    /** 선택된 컨텍스트에 해당하는 구독 후보. 알 수 없거나 권한 없는 컨텍스트는 빈 목록(fail-closed). */
+    private List<Subscription> candidatesForContext(Customer customer, String serviceCode, String context) {
+        String ctx = context == null ? "" : context.trim();
+
+        if (ctx.isEmpty()) {
+            // 레거시(컨텍스트 미지정) — 개인 + 모든 소속 조직.
+            List<Subscription> all = new ArrayList<>(
+                    subscriptions.findByOwnerAndService(Owner.CUSTOMER, customer.getId(), serviceCode));
+            for (Membership m : memberships.findByCustomerId(customer.getId())) {
+                all.addAll(subscriptions.findByOwnerAndService(
+                        Owner.ORGANIZATION, m.getOrganizationId(), serviceCode));
+            }
+            return all;
+        }
+        if (ctx.equalsIgnoreCase("personal")) {
+            return subscriptions.findByOwnerAndService(Owner.CUSTOMER, customer.getId(), serviceCode);
+        }
+        if (ctx.regionMatches(true, 0, "org:", 0, 4)) {
+            String orgCode = ctx.substring(4).trim();
+            Organization org = organizations.findByOrgCode(orgCode).orElse(null);
+            if (org == null) return List.of();
+            // 멤버십 검증(fail-closed) — 그 조직 소속이 아니면 조직 컨텍스트로 이용 불가.
+            boolean member = memberships
+                    .findByOrganizationIdAndCustomerId(org.getId(), customer.getId()).isPresent();
+            if (!member) return List.of();
+            return subscriptions.findByOwnerAndService(Owner.ORGANIZATION, org.getId(), serviceCode);
+        }
+        // 알 수 없는 컨텍스트 형식 → fail-closed.
+        return List.of();
+    }
+
+    private Customer resolveCustomer(String customerExternalId) {
+        String externalId = (customerExternalId == null || customerExternalId.isBlank())
+                ? currentUser.externalId() : customerExternalId;
+        return customers.findByExternalId(externalId).orElse(null);
+    }
+
+    private boolean isEntitled(Subscription s) {
+        return "active".equals(s.getStatus()) || "past_due".equals(s.getStatus());
+    }
+
+    private EntitlementDto notEntitled() {
+        return new EntitlementDto(false, null, null, List.of(), null);
     }
 
     private EntitlementDto toEntitlement(Subscription s) {

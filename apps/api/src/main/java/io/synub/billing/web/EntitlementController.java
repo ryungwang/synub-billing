@@ -1,6 +1,7 @@
 package io.synub.billing.web;
 
 import io.synub.billing.auth.ServiceAuth;
+import io.synub.billing.dto.Dtos.ContextsDto;
 import io.synub.billing.dto.Dtos.EntitlementDto;
 import io.synub.billing.service.EntitlementService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,12 +24,29 @@ public class EntitlementController {
         this.serviceAuth = serviceAuth;
     }
 
+    /**
+     * entitlement 판정. {@code context}로 컨텍스트 스코프를 지정한다.
+     *   미지정 → 개인 + 모든 조직(하위호환) / "personal" → 개인만 / "org:{orgCode}" → 해당 조직만.
+     */
     @GetMapping("/api/entitlements")
     public EntitlementDto entitlements(
             @RequestHeader(value = "X-Service-Key", required = false) String serviceKey,
             @RequestParam(name = "customer", required = false) String customer,
-            @RequestParam(name = "service") String service) {
+            @RequestParam(name = "service") String service,
+            @RequestParam(name = "context", required = false) String context) {
         serviceAuth.requireServiceKey(serviceKey);
-        return this.service.check(customer, service);
+        return this.service.check(customer, service, context);
+    }
+
+    /**
+     * 사용자의 컨텍스트 목록(개인 + 소속 조직). 제품이 컨텍스트 스위처를 그리는 데 쓴다.
+     * 각 항목의 {@code context} 값을 그대로 {@code /api/entitlements}의 context 파라미터로 넘기면 된다.
+     */
+    @GetMapping("/api/contexts")
+    public ContextsDto contexts(
+            @RequestHeader(value = "X-Service-Key", required = false) String serviceKey,
+            @RequestParam(name = "customer", required = false) String customer) {
+        serviceAuth.requireServiceKey(serviceKey);
+        return this.service.listContexts(customer);
     }
 }

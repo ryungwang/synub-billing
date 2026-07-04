@@ -47,6 +47,16 @@ public final class Dtos {
     public record EntitlementDto(
             boolean active, String plan, LocalDate expiresAt, List<String> features, String orgCode) {}
 
+    /**
+     * 제품이 컨텍스트 스위처를 그리기 위한 사용자 컨텍스트 1개.
+     * type: "personal"(개인) | "org"(조직). 개인이면 orgCode·role null.
+     * context: entitlement/스위처에 전달할 값 — 개인="personal", 조직="org:{orgCode}".
+     */
+    public record ContextDto(String type, String context, String orgCode, String name, String role) {}
+
+    /** 특정 사용자가 가진 컨텍스트 목록(개인 + 소속 조직들). 제품 컨텍스트 스위처의 소스. */
+    public record ContextsDto(String customer, List<ContextDto> contexts) {}
+
     // ---- 대시보드 ----
     public record SpendPointDto(String month, long amount) {}
 
