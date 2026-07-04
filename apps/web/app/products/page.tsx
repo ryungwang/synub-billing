@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Check, Users, Sparkles, Loader2, PlayCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import {
   type CheckoutTarget,
 } from "@/components/checkout-dialog";
 import { ProductIcon } from "@/components/product-icon";
-import { api, type ApiProduct, type ApiPlan } from "@/lib/api";
+import { api, type ApiProduct, type ApiPlan, type ApiSubscription } from "@/lib/api";
 import { rawContext, subscribeContext, contextOrgId } from "@/lib/context";
 import { cn, formatKRW } from "@/lib/utils";
 
@@ -21,12 +22,28 @@ export default function ProductsPage() {
   const [yearly, setYearly] = React.useState(false);
   const [target, setTarget] = React.useState<CheckoutTarget | null>(null);
   const [open, setOpen] = React.useState(false);
+  const [subs, setSubs] = React.useState<ApiSubscription[] | null>(null);
   const ctx = React.useSyncExternalStore(subscribeContext, rawContext, () => "personal");
   const isOrg = contextOrgId(ctx) !== null;
 
   React.useEffect(() => {
     api.products().then(setProducts).catch((e) => setError(e.message));
   }, []);
+
+  // 내 구독 현황 — 현재 컨텍스트(개인/회사) 기준. 컨텍스트 바뀌면 다시 조회.
+  React.useEffect(() => {
+    api.subscriptions().then(setSubs).catch(() => setSubs([]));
+  }, [ctx]);
+
+  // serviceCode → 현재 컨텍스트에서 이용 중(active/past_due)인 구독.
+  const mySubByService = React.useMemo(() => {
+    const m = new Map<string, ApiSubscription>();
+    for (const s of subs ?? []) {
+      if (s.status !== "active" && s.status !== "past_due") continue;
+      if (!m.has(s.serviceCode)) m.set(s.serviceCode, s);
+    }
+    return m;
+  }, [subs]);
 
   function subscribe(product: ApiProduct, plan: ApiPlan) {
     setTarget({
@@ -44,7 +61,7 @@ export default function ProductsPage() {
     <>
       <PageHeader
         title="제품 둘러보기"
-        description="신업의 SaaS 제품을 하나의 계정으로 구독하세요."
+        description="Synub Inc.의 SaaS 제품을 하나의 계정으로 구독하세요."
         action={
           <div className="inline-flex items-center rounded-full border border-border bg-card p-1">
             <button
@@ -97,7 +114,9 @@ export default function ProductsPage() {
       )}
 
       <div className="space-y-10">
-        {products?.map((product) => (
+        {products?.map((product) => {
+          const mySub = mySubByService.get(product.serviceCode) ?? null;
+          return (
           <section key={product.serviceCode}>
             <div className="mb-4 flex items-start gap-3.5">
               <ProductIcon name={product.name} size="lg" />
@@ -110,6 +129,12 @@ export default function ProductsPage() {
                     <Badge variant="outline">{product.category}</Badge>
                   )}
                   {product.orgOnly && <Badge>조직 전용</Badge>}
+                  {mySub && (
+                    <Badge variant="success">
+                      <Check className="size-3" />
+                      구독 중{mySub.complimentary ? " · 무상" : ""}
+                    </Badge>
+                  )}
                   {product.status === "coming_soon" && (
                     <Badge variant="outline" className="border-primary/40 text-primary">
                       <Sparkles className="size-3" /> 곧 출시
@@ -150,6 +175,11 @@ export default function ProductsPage() {
                 );
                 const useYear = yearly && !!yearlyPlan && !perSeat;
                 const active = useYear && yearlyPlan ? yearlyPlan : plan;
+                // 이 카드(티어)가 현재 이용 중인 플랜인지 — 월간/연간 이름 둘 다 대조.
+                const isCurrent =
+                  !!mySub &&
+                  (mySub.plan === plan.name ||
+                    (!!yearlyPlan && mySub.plan === yearlyPlan.name));
                 const cycleLabel = perSeat
                   ? "인 · 월"
                   : active.cycle === "yearly"
@@ -162,7 +192,8 @@ export default function ProductsPage() {
                     className={cn(
                       "relative flex flex-col p-6 transition-all hover:shadow-[var(--shadow-card-hover)]",
                       plan.highlight &&
-                        "border-primary/40 ring-1 ring-primary/30"
+                        "border-primary/40 ring-1 ring-primary/30",
+                      isCurrent && "border-success/50 ring-1 ring-success/40"
                     )}
                   >
                     {plan.highlight && (
@@ -209,25 +240,53 @@ export default function ProductsPage() {
                       ))}
                     </ul>
 
-                    <Button
-                      className="mt-6 w-full"
-                      size="lg"
-                      variant={plan.highlight ? "primary" : "outline"}
-                      disabled={
-                        product.status === "coming_soon" ||
-                        (product.orgOnly && !isOrg)
-                      }
-                      onClick={() => subscribe(product, active)}
-                    >
-                      {product.status === "coming_soon"
-                        ? "출시 예정"
-                        : product.orgOnly && !isOrg
-                        ? "회사 계정 전용"
-                        : "구독하기"}
-                    </Button>
+                    {product.status === "coming_soon" ? (
+                      <Button
+                        className="mt-6 w-full"
+                        size="lg"
+                        variant="outline"
+                        disabled
+                      >
+                        출시 예정
+                      </Button>
+                    ) : isCurrent ? (
+                      <Button
+                        className="mt-6 w-full"
+                        size="lg"
+                        variant="outline"
+                        disabled
+                      >
+                        <Check /> 이용 중
+                      </Button>
+                    ) : mySub ? (
+                      <Button
+                        className="mt-6 w-full"
+                        size="lg"
+                        variant="outline"
+                        asChild
+                      >
+                        <Link href="/subscriptions">구독 관리</Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        className="mt-6 w-full"
+                        size="lg"
+                        variant={plan.highlight ? "primary" : "outline"}
+                        disabled={product.orgOnly && !isOrg}
+                        onClick={() => subscribe(product, active)}
+                      >
+                        {product.orgOnly && !isOrg ? "회사 계정 전용" : "구독하기"}
+                      </Button>
+                    )}
                     {product.status === "coming_soon" ? (
                       <p className="mt-2 text-center text-[11px] text-muted-foreground">
                         출시 준비 중이에요 — 곧 만나요
+                      </p>
+                    ) : isCurrent ? (
+                      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                        <Link href="/subscriptions" className="hover:text-foreground">
+                          구독 관리에서 플랜 변경·해지
+                        </Link>
                       </p>
                     ) : product.orgOnly && !isOrg ? (
                       <p className="mt-2 text-center text-[11px] text-muted-foreground">
@@ -239,7 +298,8 @@ export default function ProductsPage() {
               })}
             </div>
           </section>
-        ))}
+          );
+        })}
       </div>
 
       <CheckoutDialog target={target} open={open} onOpenChange={setOpen} />
