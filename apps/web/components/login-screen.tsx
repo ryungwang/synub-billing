@@ -74,8 +74,8 @@ export function LoginScreen() {
                   "언제든 플랜 변경·해지",
                 ].map((t) => (
                   <li key={t} className="flex items-center gap-3 text-sm text-white/85">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/10">
-                      <Check className="size-3 text-white/80" />
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success/20">
+                      <Check className="size-3 text-success" strokeWidth={3} />
                     </span>
                     {t}
                   </li>
