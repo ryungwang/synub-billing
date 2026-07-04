@@ -15,8 +15,9 @@ import { cn } from "@/lib/utils";
  */
 export const PRODUCT_ICON: Record<string, LucideIcon> = {
   "문서분석 AI": FileText,
-  "스레드 자동생성": Hash,
+  "포스트플로우": Hash,
   "회계 자동화": ReceiptText,
+  "Synub Works": ReceiptText,
   "고객지원 데스크": Headset,
 };
 

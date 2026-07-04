@@ -31,7 +31,7 @@ public class DtoMapper {
      */
     private static final Map<String, UsageDto> USAGE = Map.of(
             "doc-analysis", new UsageDto("문서 분석", "건", 642, 2000),
-            "threads",      new UsageDto("스레드 생성", "개", 47, 50),
+            "post-flow",    new UsageDto("콘텐츠 생성", "개", 47, 50),
             "office",       new UsageDto("전표 처리", "건", 1820, 5000),
             "desk",         new UsageDto("문의 처리", "건", 312, 1000)
     );

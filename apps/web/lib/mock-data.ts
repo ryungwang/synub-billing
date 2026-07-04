@@ -69,13 +69,13 @@ export const products: Product[] = [
     ],
   },
   {
-    serviceCode: "threads",
-    name: "스레드 자동생성",
+    serviceCode: "post-flow",
+    name: "포스트플로우",
     category: "마케팅",
     description:
-      "키워드 하나로 SNS 스레드·게시물 초안을 자동 생성하고 예약 발행합니다.",
-    domain: "threads.synub.io",
-    emoji: "🧵",
+      "키워드 하나로 SNS 콘텐츠를 만들고 예약 발행하세요.",
+    domain: "post-flow.synub.io",
+    emoji: "✍️",
     accent: "#15b886",
     subscribers: 873,
     plans: [
@@ -85,7 +85,7 @@ export const products: Product[] = [
         amount: 15000,
         cycle: "monthly",
         tagline: "크리에이터 입문",
-        features: ["월 50개 스레드", "1개 채널 연동", "기본 템플릿"],
+        features: ["월 50개 생성", "1개 채널 연동", "기본 템플릿"],
       },
       {
         code: "pro",
@@ -93,7 +93,7 @@ export const products: Product[] = [
         amount: 25000,
         cycle: "monthly",
         tagline: "전문 크리에이터",
-        features: ["무제한 스레드", "5개 채널 연동", "예약 발행", "성과 분석"],
+        features: ["월 200개 생성", "5개 채널 연동", "예약 발행", "성과 분석"],
         highlight: true,
       },
     ],
@@ -239,8 +239,8 @@ export const subscriptions: Subscription[] = [
   },
   {
     id: 103,
-    product: "스레드 자동생성",
-    emoji: "🧵",
+    product: "포스트플로우",
+    emoji: "✍️",
     plan: "Pro",
     amount: 25000,
     cycle: "monthly",
@@ -250,7 +250,7 @@ export const subscriptions: Subscription[] = [
     card: "현대카드 ····1056",
     cancelAtPeriodEnd: false,
     monthsActive: 4,
-    usage: { label: "스레드 생성", unit: "개", used: 47, limit: 50 },
+    usage: { label: "콘텐츠 생성", unit: "개", used: 47, limit: 50 },
   },
   {
     id: 104,
@@ -305,8 +305,8 @@ export const payments: Payment[] = [
   },
   {
     id: "PAY-2026-0620",
-    product: "스레드 자동생성",
-    emoji: "🧵",
+    product: "포스트플로우",
+    emoji: "✍️",
     plan: "Pro",
     amount: 25000,
     status: "failed",
@@ -349,8 +349,8 @@ export const payments: Payment[] = [
   },
   {
     id: "PAY-2026-0420",
-    product: "스레드 자동생성",
-    emoji: "🧵",
+    product: "포스트플로우",
+    emoji: "✍️",
     plan: "Pro",
     amount: 25000,
     status: "paid",
