@@ -162,9 +162,14 @@ public class DeveloperSubscriptionSeeder {
         return out;
     }
 
-    /** 해당 소유 스코프가 이미 active/past_due 로 구독 중인 제품 id 집합. */
+    /**
+     * 해당 소유 스코프가 이미 <b>무상(complimentary)</b> 구독 중인 제품 id 집합.
+     * 무상 구독만 판정 기준으로 삼는다 — 개발자가 과거에 눌러둔 일반 구독(예: Free 체험)이 있어도
+     * 최고 플랜 무상 구독은 별도로 보장한다(그 일반 구독이 무상 최고플랜을 가리지 않도록).
+     */
     private Set<Long> coveredProductIds(String ownerType, Long ownerId) {
         return subscriptions.findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(ownerType, ownerId).stream()
+                .filter(s -> s.isComplimentary())
                 .filter(s -> "active".equals(s.getStatus()) || "past_due".equals(s.getStatus()))
                 .map(s -> s.getPlan().getProduct().getId())
                 .collect(Collectors.toSet());
