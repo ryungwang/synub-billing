@@ -48,79 +48,113 @@ export function LoginScreen() {
   }
 
   return (
-    // 그라데이션 배경 + 가운데 '떠있는 카드'(슬라이드업). 법적 푸터는 하단 고정(카드 스택에서 분리 → 스크롤 방지).
-    <div className="flex min-h-dvh flex-col bg-gradient-to-b from-muted/20 via-muted/40 to-muted/70 px-4">
-      <div className="flex flex-1 items-center justify-center py-8">
+    // 2단 분할: 왼쪽 브랜드 패널 + 오른쪽 '떠있는 카드'(슬라이드업). 세로 스택을 좌우로 분산해 스크롤 방지.
+    <div className="min-h-dvh lg:grid lg:grid-cols-2">
+      {/* 왼쪽 — 브랜드 패널(데스크톱 전용) */}
+      <aside className="dark relative hidden overflow-hidden bg-gradient-to-br from-[#14233f] to-[#0a0f1c] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="flex items-center gap-2.5">
+          <Logo size={128} className="size-9" />
+          <span className="text-lg font-extrabold tracking-tight">Synub Billing</span>
+        </div>
+        <div className="max-w-sm">
+          <h2 className="text-[28px] font-extrabold leading-tight tracking-tight">
+            통합계정 하나로
+            <br />
+            모든 SaaS를 한 곳에서.
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-white/60">
+            구독·결제·플랜 변경까지 — Synub 하나로 관리하세요.
+          </p>
+        </div>
+        <Fineprint tone="dark" align="left" />
+      </aside>
+
+      {/* 오른쪽 — 떠있는 로그인 카드 */}
+      <main className="flex min-h-dvh items-center justify-center bg-muted/40 px-4 py-8">
         <div className="animate-slide-up w-full max-w-md">
-          <div className="mb-4 flex flex-col items-center text-center">
-            <Logo size={128} className="size-12" />
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Synub Billing</h1>
+          {/* 모바일 브랜드 헤더(데스크톱은 왼쪽 패널이 대신) */}
+          <div className="mb-6 flex flex-col items-center text-center lg:hidden">
+            <Logo size={128} className="size-14" />
+            <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Synub Billing</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               통합계정 하나로 Synub의 모든 서비스를 구독·관리하세요.
             </p>
           </div>
+          {/* 데스크톱 카드 위 제목 */}
+          <div className="mb-5 hidden lg:block">
+            <h1 className="text-2xl font-extrabold tracking-tight">로그인</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              통합계정으로 Synub 서비스를 이용하세요.
+            </p>
+          </div>
 
           {/* 떠있는 카드 — 강한 그림자로 부양감 */}
-          <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-pop sm:p-6">
-          <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m);
-                  setError(null);
-                }}
-                className={cn(
-                  "rounded-lg py-2 text-sm font-bold transition-colors",
-                  mode === m
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {m === "login" ? "로그인" : "회원가입"}
-              </button>
-            ))}
-          </div>
+          <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-pop sm:p-7">
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+              {(["login", "register"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setMode(m);
+                    setError(null);
+                  }}
+                  className={cn(
+                    "rounded-lg py-2 text-sm font-bold transition-colors",
+                    mode === m
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {m === "login" ? "로그인" : "회원가입"}
+                </button>
+              ))}
+            </div>
 
-          <form onSubmit={submit} className="space-y-3">
-            {mode === "register" && (
-              <Field label="이름" value={name} onChange={setName} type="text" placeholder="홍길동" autoComplete="name" />
-            )}
-            <Field
-              label="이메일"
-              value={email}
-              onChange={setEmail}
-              type={mode === "register" ? "email" : "text"}
-              placeholder="you@synub.io"
-              autoComplete={mode === "register" ? "email" : "username"}
-              required
-            />
-            <Field label="비밀번호" value={password} onChange={setPassword} type="password" placeholder={mode === "register" ? "8자 이상" : "비밀번호"} autoComplete={mode === "login" ? "current-password" : "new-password"} required />
+            <form onSubmit={submit} className="space-y-3">
+              {mode === "register" && (
+                <Field label="이름" value={name} onChange={setName} type="text" placeholder="홍길동" autoComplete="name" />
+              )}
+              <Field
+                label="이메일"
+                value={email}
+                onChange={setEmail}
+                type={mode === "register" ? "email" : "text"}
+                placeholder="you@synub.io"
+                autoComplete={mode === "register" ? "email" : "username"}
+                required
+              />
+              <Field label="비밀번호" value={password} onChange={setPassword} type="password" placeholder={mode === "register" ? "8자 이상" : "비밀번호"} autoComplete={mode === "login" ? "current-password" : "new-password"} required />
 
-            {error && (
-              <div className="flex items-center gap-2 rounded-xl bg-destructive-subtle px-3 py-2.5 text-sm font-medium text-destructive-subtle-foreground">
-                <AlertCircle className="size-4 shrink-0" />
-                {error}
-              </div>
-            )}
+              {error && (
+                <div className="flex items-center gap-2 rounded-xl bg-destructive-subtle px-3 py-2.5 text-sm font-medium text-destructive-subtle-foreground">
+                  <AlertCircle className="size-4 shrink-0" />
+                  {error}
+                </div>
+              )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={busy !== null}>
-              {busy === "form" && <Loader2 className="animate-spin" />}
-              {mode === "login" ? "로그인" : "가입하고 시작하기"}
+              <Button type="submit" size="lg" className="w-full" disabled={busy !== null}>
+                {busy === "form" && <Loader2 className="animate-spin" />}
+                {mode === "login" ? "로그인" : "가입하고 시작하기"}
+              </Button>
+            </form>
+
+            <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              또는
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button variant="outline" size="lg" className="w-full" onClick={demo} disabled={busy !== null}>
+              {busy === "demo" ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              데모 계정으로 둘러보기
             </Button>
-          </form>
-
-          <Button variant="outline" size="lg" className="mt-3 w-full" onClick={demo} disabled={busy !== null}>
-            {busy === "demo" ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            데모 계정으로 둘러보기
-          </Button>
           </div>
+
+          {/* 모바일 법적 푸터(데스크톱은 왼쪽 패널 하단이 대신) */}
+          <Fineprint tone="light" align="center" className="mt-5 lg:hidden" />
         </div>
-      </div>
-      <footer className="pb-5 pt-2">
-        <Fineprint tone="light" align="center" className="mx-auto max-w-2xl" />
-      </footer>
+      </main>
     </div>
   );
 }
