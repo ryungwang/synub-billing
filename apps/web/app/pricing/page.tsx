@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { COMPANY } from "@/lib/company";
+import { PricingPlans } from "./pricing-plans";
 
 // 항상 서버에서 최신 요금을 렌더(HTML에 가격 포함) — PG 심사 '상품 등록' 확인 + 검색 노출.
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 type Plan = {
   id: number;
   name: string;
+  code?: string;
   tagline: string | null;
   amount: number;
   cycle: "monthly" | "yearly";
@@ -41,15 +43,6 @@ async function getProducts(): Promise<Product[]> {
   }
 }
 
-function won(n: number) {
-  return "₩" + n.toLocaleString("ko-KR");
-}
-
-function cycleLabel(plan: Plan) {
-  if (plan.pricingType === "per_seat") return "인 · 월";
-  return plan.cycle === "yearly" ? "년" : "월";
-}
-
 export default async function PricingPage() {
   const products = await getProducts();
 
@@ -62,66 +55,13 @@ export default async function PricingPage() {
         </p>
       </header>
 
-      {products.length === 0 && (
+      {products.length === 0 ? (
         <p className="rounded-2xl border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
           현재 표시할 요금제가 없습니다.
         </p>
+      ) : (
+        <PricingPlans products={products} />
       )}
-
-      <div className="space-y-12">
-        {products.map((product) => (
-          <section key={product.serviceCode}>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-extrabold tracking-tight">{product.name}</h2>
-              {product.category && (
-                <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                  {product.category}
-                </span>
-              )}
-              {product.orgOnly && (
-                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
-                  조직 전용
-                </span>
-              )}
-              {product.status === "coming_soon" && (
-                <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-bold text-primary">
-                  곧 출시
-                </span>
-              )}
-            </div>
-            {product.description && (
-              <p className="mb-4 max-w-2xl text-sm text-muted-foreground">{product.description}</p>
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {product.plans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="flex flex-col rounded-2xl border border-border bg-card p-6"
-                >
-                  <span className="text-base font-bold">{plan.name}</span>
-                  {plan.tagline && (
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">{plan.tagline}</p>
-                  )}
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-[26px] font-extrabold tracking-tight tabular-nums">
-                      {won(plan.amount)}
-                    </span>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      / {cycleLabel(plan)}
-                    </span>
-                  </div>
-                  <ul className="mt-5 flex-1 space-y-2 text-sm text-secondary-foreground">
-                    {plan.features.map((f) => (
-                      <li key={f}>· {f}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
 
       <div className="mt-12 rounded-2xl border border-border bg-card px-6 py-5 text-sm text-muted-foreground">
         구독하려면{" "}
