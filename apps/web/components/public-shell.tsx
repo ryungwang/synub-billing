@@ -19,6 +19,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
             <Link href="/pricing" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
               요금
             </Link>
+            <Link href="/faq" className="hidden text-sm font-semibold text-muted-foreground hover:text-foreground sm:block">
+              자주 묻는 질문
+            </Link>
+            <Link href="/contact" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
+              문의
+            </Link>
             <Link
               href="/"
               className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:opacity-90"

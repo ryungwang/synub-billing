@@ -20,6 +20,12 @@ export function SiteFooter() {
     <footer className="mt-16 border-t border-border bg-card">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold">
+          <Link href="/pricing" className="hover:text-foreground">요금</Link>
+          <span className="text-border">·</span>
+          <Link href="/faq" className="hover:text-foreground">자주 묻는 질문</Link>
+          <span className="text-border">·</span>
+          <Link href="/contact" className="hover:text-foreground">문의</Link>
+          <span className="text-border">·</span>
           <Link href="/terms" className="hover:text-foreground">이용약관</Link>
           <span className="text-border">·</span>
           <Link href="/privacy" className="font-bold hover:text-foreground">개인정보처리방침</Link>
