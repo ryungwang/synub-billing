@@ -90,16 +90,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   // 닫힘(PG 심사 요건 갖출 때까지): 비로그인 방문자는 '준비 중', 로그인한 운영자는 정상 사용.
   if (SITE_CLOSED) {
+    // 요금·약관·개인정보·환불은 닫힘 중에도 항상 공개 — 전자상거래 표시·PG 심사자가 로그인 없이 봐야 함.
+    // (로그인 화면 푸터 링크가 여기로 오므로 이 체크가 user 게이트보다 먼저 와야 링크가 동작한다.)
+    if (isPublic) return <PublicShell>{children}</PublicShell>;
     if (!mounted) return loader;
     if (!user) return <Maintenance />;
     // 허용 운영자(haru·sky·admin)만 진입. 그 외 로그인 계정은 차단.
     if (!ALLOWED_SUBS.includes(user.sub) && !ALLOWED_EMAILS.includes(user.email))
       return <Maintenance blocked />;
-    return isPublic ? (
-      <PublicShell>{children}</PublicShell>
-    ) : (
-      <AppShell>{children}</AppShell>
-    );
+    return <AppShell>{children}</AppShell>;
   }
 
   if (isPublic) return <PublicShell>{children}</PublicShell>;
