@@ -41,7 +41,7 @@ export function SiteFooter() {
         </dl>
 
         <p className="mt-4 text-xs text-muted-foreground/70">
-          © {COMPANY.enName}. 통신판매중개자가 아닌 통신판매업자로서 자체 SaaS 구독 결제를 제공합니다.
+          © {COMPANY.enName} 통신판매중개자가 아닌 통신판매업자로서 자체 SaaS 구독 결제를 제공합니다.
         </p>
       </div>
     </footer>

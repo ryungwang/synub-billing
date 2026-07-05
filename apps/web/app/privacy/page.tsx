@@ -49,7 +49,7 @@ export default function PrivacyPage() {
       <ul>
         <li>결제 처리 및 본인인증: 전자지급결제대행사(포트원 및 연동 PG사).</li>
         <li>서비스 인프라(호스팅·저장): Amazon Web Services.</li>
-        <li>통합계정 인증: 신업 통합계정(SSO) 서비스.</li>
+        <li>통합계정 인증: Synub 통합계정(SSO) 서비스.</li>
       </ul>
 
       <h2>6. 정보주체의 권리와 행사 방법</h2>

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "요금 안내 — Synub Billing",
-  description: "신업의 SaaS 제품 구독 요금제와 가격을 확인하세요.",
+  description: "Synub Inc.의 SaaS 제품 구독 요금제와 가격을 확인하세요.",
 };
 
 type Plan = {
@@ -58,7 +58,7 @@ export default async function PricingPage() {
       <header className="mb-10">
         <h1 className="text-2xl font-extrabold tracking-tight">요금 안내</h1>
         <p className="mt-1.5 text-muted-foreground">
-          {COMPANY.serviceName} — 신업의 여러 SaaS 제품을 하나의 계정으로 구독하고 결제하세요. 모든 요금은 부가세(VAT) 포함 원화(KRW) 기준입니다.
+          {COMPANY.serviceName} — Synub Inc.의 여러 SaaS 제품을 하나의 계정으로 구독하고 결제하세요. 모든 요금은 부가세(VAT) 포함 원화(KRW) 기준입니다.
         </p>
       </header>
 

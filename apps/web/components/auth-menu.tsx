@@ -145,7 +145,7 @@ function AuthDialog({
         <DialogHeader>
           <DialogTitle>{mode === "login" ? "로그인" : "회원가입"}</DialogTitle>
           <DialogDescription>
-            신업 통합계정(SSO) 하나로 모든 서비스를 이용하세요.
+            Synub 통합계정(SSO) 하나로 모든 서비스를 이용하세요.
           </DialogDescription>
         </DialogHeader>
 
