@@ -19,7 +19,8 @@ import {
 
 // 로그인 없이 공개되는 경로 — 요금/약관/개인정보/환불(전자상거래 표시·PG 심사).
 // 서버 렌더 단계에서 바로 통과시켜 스크래퍼·검색엔진이 콘텐츠를 볼 수 있게 한다.
-const PUBLIC_PREFIXES = ["/pricing", "/terms", "/privacy", "/refund"];
+// "/product"는 공개 제품 상세(/product/{code})만 매칭 — 인증 카탈로그 "/products"(복수)와는 별개(접두 불일치).
+const PUBLIC_PREFIXES = ["/pricing", "/product", "/terms", "/privacy", "/refund"];
 
 // 홈페이지 닫힘 플래그 — PG(카카오페이/카드사) 심사 요건(유선전화·판매상품 등) 갖춰질 때까지 true.
 // true면 비로그인 방문자에게 '서비스 준비 중'만 노출(운영자 로그인은 유지). 열려면 false.

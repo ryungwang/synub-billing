@@ -28,7 +28,7 @@
 
 - 파일 위치: `apps/api/src/main/resources/db/migration/`
 - 파일명: `V{다음번호}__{설명}.sql` (예: `V5__product_ooffice.sql`) — 언더스코어 **2개**.
-- **현재 최신 = `V4`. 다음 신규 번호는 `V5`.** (`ls`로 항상 최신 번호 재확인 후 +1)
+- **다음 번호는 항상 `ls`로 현 최신을 확인하고 +1.** (이 문서 최초 작성 시점 최신은 `V4`였으나 이후 계속 늘었다 — 병렬 작업이 있으니 **커밋 직전에도 재확인**할 것. 예전 번호 재사용 금지 → 체크섬 충돌·부팅 실패.)
 - **기존 V1~V4 파일은 절대 수정·삭제 금지.** Flyway는 적용된 마이그레이션을 불변으로 취급 → 내용이 바뀌면 체크섬 불일치로 부팅 실패. 변경은 **항상 새 버전 파일 추가**로만.
 - 스키마: Flyway `default-schema = billing`. SQL 안에서 스키마 접두사 없이 테이블명만 쓰면 `billing` 스키마에 들어간다.
 - 적용 시점: 백엔드 부팅 시 자동 마이그레이션. 파일 추가 후 **백엔드 재기동**하면 반영된다.
@@ -137,6 +137,24 @@ export const PRODUCT_ICON: Record<string, LucideIcon> = {
   아이콘의 **모양**으로만 제품을 구분한다. 임의 색/그라데이션/브랜드 3색을 아이콘에 넣지 말 것.
   (브랜드 3색 큐브는 **로고에만** 쓴다. 상세 규칙은 프로젝트 메모리 `ui-must-be-premium` 참조.)
 - 아이콘은 `lucide-react`에서 `import` 후 맵과 상단 import 둘 다에 추가.
+
+### 2.1 공개 제품 상세 페이지 (자동 — 제품별 코드 불필요)
+
+카탈로그에 등록된 모든 `active`/`coming_soon` 제품은 **공개 제품 상세 페이지**를 자동으로 갖는다.
+새 제품을 등록하면(§1) 별도 코드 없이 상세 페이지가 생긴다.
+
+- **URL:** `/product/{service_code}` — 비로그인 열람 가능(로그인 게이트 예외). `components/auth-gate.tsx`의
+  `PUBLIC_PREFIXES`에 `/product`가 포함돼 있다. (인증 카탈로그 `/products`(복수)와는 별개 경로.)
+- **구성:** 히어로(아이콘·이름·분류·설명·데모 버튼·이용자 수) + **주요 기능**(전 플랜 `features` 합집합) +
+  **요금제**(월/연 토글, 인기 플랜 강조) + 로그인 CTA.
+- **데이터 원천은 `GET /products`뿐** — 상세 페이지 품질은 §1의 등록값이 그대로 좌우한다:
+  - `description` → 히어로 부제(한 줄로 명확히).
+  - `plans[].features` → "주요 기능" 목록이 여기서 만들어진다. **과장 없이 실제 기능**으로 채울 것.
+  - `demo_url` → 있으면 "데모 체험하기" 버튼 노출.
+  - 아이콘 → §2의 `PRODUCT_ICON`(제품 `name` 키). 없으면 기본 아이콘 폴백.
+- 공개 요금 페이지(`/pricing`)의 제품명이 이 상세로 링크된다.
+- **관련 파일:** `apps/web/app/product/[serviceCode]/page.tsx`(서버·조회·메타), `product-detail.tsx`(상세 UI),
+  `components/plan-grid.tsx`·`components/billing-toggle.tsx`(요금 카드·토글 — `/pricing`과 공유).
 
 ---
 
@@ -428,7 +446,10 @@ Authorization: (로그인 사용자 세션 — 해당 조직의 owner/billing_ma
 | 읽기 API | `apps/api/.../web/CatalogController.java` (`GET /products`), `service/CatalogService.java` |
 | 온보딩 핸드오프 | `apps/api/.../web/HandoffController.java` (`GET /organizations/{orgId}/handoff?service=`) |
 | DTO 변환·사용량 | `apps/api/.../service/DtoMapper.java` |
-| 프론트 카탈로그 | `apps/web/app/products/page.tsx`, `components/product-icon.tsx` |
+| 프론트 카탈로그(로그인) | `apps/web/app/products/page.tsx`, `components/product-icon.tsx` |
+| 공개 요금 페이지 | `apps/web/app/pricing/page.tsx`, `app/pricing/pricing-plans.tsx` |
+| 공개 제품 상세(자동) | `apps/web/app/product/[serviceCode]/page.tsx`, `product-detail.tsx` (§2.1) |
+| 요금 카드·토글(공유) | `apps/web/components/plan-grid.tsx`, `components/billing-toggle.tsx` |
 | PRD | `README.md` (§2 "새 제품 추가가 코드 수정 없이 카탈로그 등록만으로") |
 
 > PRD의 이상(理想)은 "코드 수정 없이 카탈로그 등록만으로 제품 추가"다. 현재 구현에서 **카탈로그 등록 = 마이그레이션 1개**이고,
