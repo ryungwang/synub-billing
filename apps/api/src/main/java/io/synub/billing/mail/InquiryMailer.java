@@ -50,7 +50,7 @@ public class InquiryMailer {
 
     private String html(Inquiry inq) {
         String appUrl = appUrl();
-        String logo = appUrl + "/brand/synub-logo-light.png";
+        String logo = appUrl + "/brand/synub-symbol-light.png";
         String product = inq.getProductLabel() == null || inq.getProductLabel().isBlank()
                 ? "<span style=\"color:#B0B8C1\">지정 안 함</span>" : esc(inq.getProductLabel());
         String person = inq.getName() == null || inq.getName().isBlank()
@@ -69,15 +69,16 @@ public class InquiryMailer {
         return """
             <div style="margin:0;padding:0;background:#F1F3F5;">
               <div style="max-width:560px;margin:0 auto;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Segoe UI',Roboto,sans-serif;">
-                <div style="text-align:left;padding:6px 0 24px 4px;">
-                  <img src="%s" alt="Synub" width="168" style="width:168px;height:auto;display:inline-block;border:0;" />
+                <div style="text-align:left;padding:2px 0 14px 2px;">
+                  <img src="%s" alt="" width="42" height="42" style="width:42px;height:42px;display:inline-block;vertical-align:middle;border:0;" />
+                  <span style="display:inline-block;vertical-align:middle;margin-left:11px;font-size:25px;font-weight:800;color:#191F28;letter-spacing:-0.02em;">Synub Billing</span>
                 </div>
                 <div style="background:#ffffff;border:1px solid #E8EBED;border-radius:22px;overflow:hidden;box-shadow:0 8px 28px rgba(17,24,39,0.06);">
                   <div style="height:5px;background:#3182F6;"></div>
                   <div style="padding:30px 30px 6px;">
                     <div style="display:inline-block;background:#EAF2FE;color:#3182F6;font-size:12px;font-weight:800;letter-spacing:-0.01em;padding:6px 13px;border-radius:999px;">%s</div>
                     <h1 style="font-size:22px;font-weight:800;color:#191F28;margin:16px 0 6px;letter-spacing:-0.02em;">새 문의가 접수되었어요</h1>
-                    <p style="font-size:13px;color:#8B95A1;margin:0;">%s · Synub Billing 문의 폼</p>
+                    <p style="font-size:13px;color:#8B95A1;margin:0;">%s · 문의 폼 접수</p>
                   </div>
                   <div style="padding:10px 30px 2px;">
                     <table width="100%%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;line-height:1.5;">
