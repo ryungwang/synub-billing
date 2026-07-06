@@ -95,6 +95,24 @@ export function clearToken() {
   emit();
 }
 
+/**
+ * 통합세션 생존 확인(회전 없음) — SSO 공유 쿠키 세션이 죽었으면(401) 로컬 액세스도 정리해
+ * 전역 로그아웃을 전파한다. 네트워크 오류는 무시(일시 장애로 로그아웃시키지 않음).
+ * /auth/refresh(회전) 대신 /auth/session(조회 전용)이라 다중 탭에서 자주 호출해도 안전.
+ */
+export async function checkSsoSession(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const res = await fetch(`${SSO_BASE}/auth/session`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (res.status === 401) clearToken();
+  } catch {
+    /* 네트워크 오류 — 무시 */
+  }
+}
+
 let refreshing: Promise<string | null> | null = null;
 
 /**

@@ -84,13 +84,24 @@ export function AuthMenu() {
             </Link>
             <button
               onClick={() => {
+                if (
+                  !window.confirm(
+                    "모든 Synub 서비스에서 함께 로그아웃됩니다.\n계속하시겠어요?"
+                  )
+                )
+                  return;
                 logout();
                 window.location.reload();
               }}
-              className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive-subtle"
+              className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors hover:bg-destructive-subtle"
             >
-              <LogOut className="size-4" />
-              로그아웃
+              <span className="flex items-center gap-2 text-sm font-medium text-destructive">
+                <LogOut className="size-4" />
+                로그아웃
+              </span>
+              <span className="pl-6 text-xs text-muted-foreground">
+                모든 Synub 서비스에서 로그아웃
+              </span>
             </button>
           </div>
         </>

@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import {
   getToken,
   refreshAccessToken,
+  checkSsoSession,
   rawToken,
   subscribeToken,
   decode,
@@ -52,6 +53,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     (async () => {
       if (!getToken()) {
         await refreshAccessToken();
+      } else {
+        // 이미 로그인 → 배경으로 SSO 세션 생존 확인(다른 서비스에서 전역 로그아웃했으면 여기서도 정리).
+        checkSsoSession();
       }
       setMounted(true);
     })();
@@ -74,8 +78,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // 백그라운드 탭은 타이머가 지연될 수 있어, 탭이 다시 보일 때 만료됐으면 즉시 갱신.
   React.useEffect(() => {
     function onVisible() {
-      if (document.visibilityState === "visible" && !getToken()) {
-        refreshAccessToken().catch(() => {});
+      if (document.visibilityState !== "visible") return;
+      if (!getToken()) {
+        refreshAccessToken().catch(() => {}); // 무폼 로그인 시도(쿠키)
+      } else {
+        checkSsoSession(); // 세션 생존 확인 → 전역 로그아웃 전파
       }
     }
     document.addEventListener("visibilitychange", onVisible);
