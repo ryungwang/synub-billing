@@ -150,18 +150,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             도움이 필요하신가요?
           </div>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            결제·구독 관련 문의는 고객센터에서 빠르게 도와드려요.
+            자주 묻는 질문에서 바로 확인하거나 문의를 남겨주세요.
           </p>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="mt-3 w-full"
-          >
-            <Link href="/contact" onClick={onNavigate}>
-              고객센터 문의
-            </Link>
-          </Button>
+          <div className="mt-3 space-y-2">
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link href="/faq" onClick={onNavigate}>
+                자주 묻는 질문
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link href="/contact" onClick={onNavigate}>
+                문의하기
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
