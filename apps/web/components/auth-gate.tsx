@@ -99,22 +99,30 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   // 닫힘(PG 심사 요건 갖출 때까지): 비로그인 방문자는 '준비 중', 로그인한 운영자는 정상 사용.
   if (SITE_CLOSED) {
-    // 요금·약관·개인정보·환불은 닫힘 중에도 항상 공개 — 전자상거래 표시·PG 심사자가 로그인 없이 봐야 함.
-    // (로그인 화면 푸터 링크가 여기로 오므로 이 체크가 user 게이트보다 먼저 와야 링크가 동작한다.)
+    // 로그인한 운영자는 공개 페이지(요금·문의·약관 등)도 앱 셸 안에서 — 사이드바 네비 유지
+    // (공개 셸로 튕기면 '로그인' 버튼이 보여 로그아웃된 듯한 이질감이 생김).
+    if (mounted && user) {
+      const allowed =
+        ALLOWED_SUBS.includes(user.sub) || ALLOWED_EMAILS.includes(user.email);
+      if (allowed) return <AppShell>{children}</AppShell>;
+      // 로그인했지만 미허용 계정: 공개 페이지는 열람 허용, 앱은 차단.
+      if (isPublic) return <PublicShell>{children}</PublicShell>;
+      return <Maintenance blocked />;
+    }
+    // 요금·약관·개인정보·환불·문의는 닫힘 중에도 항상 공개 — 전자상거래 표시·PG 심사자가 로그인 없이 봐야 함.
+    // (SSR/비로그인 단계: 공개 콘텐츠를 그대로 노출해 스크래퍼·검색엔진이 볼 수 있게 한다.)
     if (isPublic) return <PublicShell>{children}</PublicShell>;
     if (!mounted) return loader;
-    if (!user) return <Maintenance />;
-    // 허용 운영자(haru·sky·admin)만 진입. 그 외 로그인 계정은 차단.
-    if (!ALLOWED_SUBS.includes(user.sub) && !ALLOWED_EMAILS.includes(user.email))
-      return <Maintenance blocked />;
-    return <AppShell>{children}</AppShell>;
+    return <Maintenance />;
   }
+
+  // 오픈 상태: 로그인한 사용자는 공개 페이지도 앱 셸 안에서 본다.
+  if (mounted && user) return <AppShell>{children}</AppShell>;
 
   if (isPublic) return <PublicShell>{children}</PublicShell>;
 
   // SSR/hydration 불일치 방지 + 초기 갱신 대기 — 마운트 전엔 중립 로딩
   if (!mounted) return loader;
 
-  if (!user) return <LoginScreen />;
-  return <AppShell>{children}</AppShell>;
+  return <LoginScreen />;
 }

@@ -153,12 +153,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             결제·구독 관련 문의는 고객센터에서 빠르게 도와드려요.
           </p>
           <Button
+            asChild
             variant="outline"
             size="sm"
             className="mt-3 w-full"
-            onClick={onNavigate}
           >
-            고객센터 문의
+            <Link href="/contact" onClick={onNavigate}>
+              고객센터 문의
+            </Link>
           </Button>
         </div>
       </div>
