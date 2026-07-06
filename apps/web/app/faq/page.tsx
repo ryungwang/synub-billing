@@ -85,7 +85,7 @@ const GROUPS: Group[] = [
       },
       {
         q: "더 궁금한 점이 있어요.",
-        a: "'문의하기'에서 이메일 또는 전화로 언제든 문의해 주세요. 최대한 빠르게 답변드리겠습니다.",
+        a: "'문의하기'에서 이메일 또는 온라인 문의 폼으로 언제든 문의해 주세요. 최대한 빠르게 답변드리겠습니다.",
       },
     ],
   },
@@ -161,7 +161,7 @@ export default function FaqPage() {
           <div>
             <p className="text-sm font-bold">원하는 답을 못 찾으셨나요?</p>
             <p className="text-[13px] text-muted-foreground">
-              담당자가 이메일·전화로 도와드릴게요.
+              담당자가 이메일·온라인 문의로 도와드릴게요.
             </p>
           </div>
         </div>

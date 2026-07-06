@@ -215,9 +215,7 @@ function Fineprint({
         </div>
         <p>{COMPANY.address}</p>
         <div className={cn("flex flex-wrap items-center gap-x-2", justify)}>
-          <a href={`tel:${COMPANY.tel.replace(/[^0-9+]/g, "")}`} className="whitespace-nowrap hover:underline">
-            고객센터 {COMPANY.tel}
-          </a>
+          <span className="whitespace-nowrap">전화번호 {COMPANY.tel}</span>
           <span className={sepCls}>·</span>
           <a href={`mailto:${COMPANY.email}`} className="whitespace-nowrap hover:underline">
             {COMPANY.email}

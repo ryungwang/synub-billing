@@ -73,8 +73,8 @@ export default function RefundPage() {
       <h2>제9조 (문의처)</h2>
       <ul>
         <li>{COMPANY.legalName} ({COMPANY.serviceName})</li>
-        <li>이메일: {COMPANY.email}</li>
-        <li>고객센터: {COMPANY.tel}</li>
+        <li>이메일: {COMPANY.email} (문의·청약철회 접수)</li>
+        <li>전화번호: {COMPANY.tel}</li>
         <li>주소: {COMPANY.address}</li>
       </ul>
       <p>

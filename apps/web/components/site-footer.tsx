@@ -12,7 +12,7 @@ export function SiteFooter() {
     ["사업자등록번호", COMPANY.bizRegNo],
     ["통신판매업신고", COMPANY.mailOrderNo],
     ["주소", COMPANY.address],
-    ["고객센터", COMPANY.tel],
+    ["전화번호", COMPANY.tel],
     ["이메일", COMPANY.email],
   ];
 
