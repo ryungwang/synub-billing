@@ -2,6 +2,7 @@ package io.synub.billing.web;
 
 import io.synub.billing.dto.Dtos.AdminAnalyticsDto;
 import io.synub.billing.dto.Dtos.AdminCustomerDto;
+import io.synub.billing.dto.Dtos.AdminInquiryDto;
 import io.synub.billing.dto.Dtos.AdminOrgDto;
 import io.synub.billing.dto.Dtos.AdminPaymentDto;
 import io.synub.billing.dto.Dtos.AdminStatsDto;
@@ -10,6 +11,7 @@ import io.synub.billing.dto.Dtos.ProductAdminDto;
 import io.synub.billing.dto.Dtos.ProductMetaRequest;
 import io.synub.billing.dto.Dtos.RejectOrgRequest;
 import io.synub.billing.service.AdminService;
+import io.synub.billing.service.InquiryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +25,11 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService admin;
+    private final InquiryService inquiries;
 
-    public AdminController(AdminService admin) {
+    public AdminController(AdminService admin, InquiryService inquiries) {
         this.admin = admin;
+        this.inquiries = inquiries;
     }
 
     @GetMapping("/stats")
@@ -100,6 +104,28 @@ public class AdminController {
                 .contentType(MediaType.parseMediaType(doc.contentType()))
                 .header("Content-Disposition", "inline; filename=\"business-doc\"")
                 .body(doc.content());
+    }
+
+    // ---- 문의(contact form) ----
+
+    @GetMapping("/inquiries")
+    public List<AdminInquiryDto> inquiries() {
+        return inquiries.list();
+    }
+
+    @PostMapping("/inquiries/{id}/resolve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resolveInquiry(@PathVariable Long id) {
+        inquiries.resolve(id);
+    }
+
+    @GetMapping("/inquiries/{id}/attachment")
+    public ResponseEntity<byte[]> inquiryAttachment(@PathVariable Long id) {
+        InquiryService.Attachment a = inquiries.attachment(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(a.contentType()))
+                .header("Content-Disposition", "attachment; filename=\"" + a.filename().replace("\"", "") + "\"")
+                .body(a.content());
     }
 }
 

@@ -40,6 +40,8 @@ public class IdentityFilter extends OncePerRequestFilter {
             "/api/entitlements", "/api/contexts", "/api/usage", "/api/orgs",
             // 제품 카탈로그(요금)는 마케팅용 공개 정보 — 로그인 전 요금 페이지(/pricing) 서버렌더가 조회.
             "/products",
+            // 문의 폼 접수 — 로그인 전 공개 문의 페이지(/contact)에서 제출. 남용 방지는 서비스에서(허니팟·레이트리밋·검증).
+            "/inquiries",
             // 아바타 이미지 — 등록된 avatar_key(UUID)만 서빙, <img src>로 로드하므로 공개.
             "/avatars"};
 

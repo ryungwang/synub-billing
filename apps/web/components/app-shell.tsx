@@ -12,6 +12,7 @@ import {
   Users,
   ShieldCheck,
   Package,
+  Inbox,
   Menu,
   X,
   LifeBuoy,
@@ -93,6 +94,7 @@ const ADMIN_GROUP: NavGroup = {
     { href: "/admin/customers", label: "개인 고객", icon: Users },
     { href: "/admin/organizations", label: "회사", icon: ShieldCheck },
     { href: "/admin/products", label: "제품", icon: Package },
+    { href: "/admin/inquiries", label: "문의", icon: Inbox },
   ],
 };
 

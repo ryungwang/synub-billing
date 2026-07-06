@@ -129,6 +129,16 @@ public final class Dtos {
     public record AdminCustomerDto(Long id, String externalId, String email, String phone,
                                    long subscriptions, LocalDate createdAt) {}
 
+    /** 문의 접수 응답 — id=생성된 문의 번호, received=접수 성공. */
+    public record InquiryResultDto(Long id, boolean received) {}
+
+    /** 관리자 문의 목록/상세 행. createdAt=KST ISO 문자열, hasAttachment=첨부 여부. */
+    public record AdminInquiryDto(Long id, String type, String productLabel, String name,
+                                  String email, String message, boolean hasAttachment,
+                                  String attachmentFilename, Integer attachmentSize,
+                                  String status, String externalId, String clientIp,
+                                  String createdAt) {}
+
     /** 마이페이지 프로필 — avatarUrl은 미설정 시 null. */
     public record ProfileDto(String avatarUrl) {}
 

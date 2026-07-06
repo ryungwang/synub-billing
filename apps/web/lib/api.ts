@@ -186,6 +186,29 @@ export interface ApiAdminCustomer {
   createdAt: string | null;
 }
 
+// 문의 접수 응답
+export interface ApiInquiryResult {
+  id: number | null;
+  received: boolean;
+}
+
+// 관리자 문의(contact form) 목록/상세 행
+export interface ApiAdminInquiry {
+  id: number;
+  type: string;
+  productLabel: string | null;
+  name: string | null;
+  email: string;
+  message: string;
+  hasAttachment: boolean;
+  attachmentFilename: string | null;
+  attachmentSize: number | null;
+  status: string;
+  externalId: string | null;
+  clientIp: string | null;
+  createdAt: string | null;
+}
+
 // 관리자 제품 메타(가격/플랜 제외 — 그건 마이그레이션 전용)
 export interface ApiAdminProduct {
   id: number;
@@ -280,6 +303,22 @@ export interface ApiProfile {
 
 export const api = {
   products: () => http<ApiProduct[]>("/products"),
+  // 문의 접수(공개) — 멀티파트. 인증 헤더 없이 익명 제출(데모 계정 변경차단 회피).
+  // Content-Type은 브라우저가 boundary 포함해 설정하므로 직접 지정하지 않는다.
+  submitInquiry: async (fd: FormData): Promise<ApiInquiryResult> => {
+    const res = await fetch(`${BASE}/inquiries`, { method: "POST", body: fd });
+    if (!res.ok) {
+      let detail = `${res.status} ${res.statusText}`;
+      try {
+        const b = await res.json();
+        if (b?.detail) detail = b.detail;
+      } catch {
+        /* noop */
+      }
+      throw new Error(detail);
+    }
+    return (await res.json()) as ApiInquiryResult;
+  },
   dashboard: () => http<ApiDashboard>("/dashboard"),
   organizations: () => http<ApiOrg[]>("/organizations"),
 
@@ -393,6 +432,19 @@ export const api = {
   adminRefund: (id: number) =>
     http<ApiAdminPayment>(`/admin/payments/${id}/refund`, { method: "POST" }),
   adminCustomers: () => http<ApiAdminCustomer[]>("/admin/customers"),
+  // 문의(contact form) 관리
+  adminInquiries: () => http<ApiAdminInquiry[]>("/admin/inquiries"),
+  adminResolveInquiry: (id: number) =>
+    http<void>(`/admin/inquiries/${id}/resolve`, { method: "POST" }),
+  // 첨부파일을 토큰 인증으로 받아 blob URL 생성(다운로드용)
+  adminInquiryAttachmentUrl: async (id: number) => {
+    const token = getToken();
+    const res = await fetch(`${BASE}/admin/inquiries/${id}/attachment`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("첨부파일을 불러올 수 없습니다.");
+    return URL.createObjectURL(await res.blob());
+  },
   adminOrganizations: () => http<ApiAdminOrg[]>("/admin/organizations"),
   adminApproveOrg: (id: number) =>
     http<void>(`/admin/organizations/${id}/approve`, { method: "POST" }),

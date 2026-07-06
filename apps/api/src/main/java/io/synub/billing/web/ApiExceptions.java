@@ -26,6 +26,11 @@ public final class ApiExceptions {
         public ConflictException(String message) { super(message); }
     }
 
+    /** 요청 과다(예: 공개 문의 폼 남용 방지 레이트리밋 초과). */
+    public static class TooManyRequestsException extends RuntimeException {
+        public TooManyRequestsException(String message) { super(message); }
+    }
+
     @RestControllerAdvice
     public static class Handler {
         @ExceptionHandler(NotFoundException.class)
@@ -46,6 +51,11 @@ public final class ApiExceptions {
         @ExceptionHandler(ConflictException.class)
         public ProblemDetail conflict(ConflictException e) {
             return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        }
+
+        @ExceptionHandler(TooManyRequestsException.class)
+        public ProblemDetail tooMany(TooManyRequestsException e) {
+            return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
         }
     }
 }
