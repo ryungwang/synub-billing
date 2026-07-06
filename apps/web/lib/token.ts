@@ -75,11 +75,15 @@ export function getRefreshToken(): string | null {
   return typeof window !== "undefined" ? localStorage.getItem(REFRESH_KEY) : null;
 }
 
-/** 로그인/갱신 응답의 access(+refresh) 저장. */
-export function setTokens(accessToken: string, refreshToken?: string) {
+/**
+ * 로그인/갱신 응답의 access 저장.
+ * 리프레시 토큰은 이제 SSO가 httpOnly 쿠키(.synub.io)로 관리 — localStorage에 저장하지 않는다.
+ * 통합세션 전환: 남아있을 수 있는 레거시 REFRESH_KEY는 제거한다.
+ */
+export function setTokens(accessToken: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEY, accessToken);
-  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+  localStorage.removeItem(REFRESH_KEY);
   emit();
 }
 
@@ -94,27 +98,31 @@ export function clearToken() {
 let refreshing: Promise<string | null> | null = null;
 
 /**
- * 리프레시 토큰으로 액세스 토큰 갱신. 동시 호출은 하나로 합친다(중복 회전 방지).
- * 성공 시 새 토큰 저장 후 access 반환, 실패 시 토큰 정리 후 null.
+ * 통합세션 갱신 — SSO의 httpOnly 리프레시 쿠키(.synub.io)로 액세스 토큰 재발급.
+ * credentials:"include"로 쿠키를 실어 보내므로, 다른 서비스에서 로그인한 세션도 이어받는다.
+ * (전환기: 아직 쿠키가 없고 레거시 localStorage 리프레시만 있으면 body로 병행 전송 → 이후 쿠키로 이관.)
+ * 동시 호출은 하나로 합친다(중복 회전 방지). 성공 시 access 저장·반환, 실패 시 정리 후 null.
  */
 export function refreshAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return Promise.resolve(null);
-  const rt = getRefreshToken();
-  if (!rt) return Promise.resolve(null);
   if (refreshing) return refreshing;
 
-  refreshing = fetch(`${SSO_BASE}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken: rt }),
-  })
+  const legacy =
+    typeof window !== "undefined" ? localStorage.getItem(REFRESH_KEY) : null;
+  const init: RequestInit = { method: "POST", credentials: "include" };
+  if (legacy) {
+    init.headers = { "Content-Type": "application/json" };
+    init.body = JSON.stringify({ refreshToken: legacy });
+  }
+
+  refreshing = fetch(`${SSO_BASE}/auth/refresh`, init)
     .then(async (res) => {
       if (!res.ok) {
         clearToken();
         return null;
       }
       const data = await res.json();
-      setTokens(data.accessToken, data.refreshToken);
+      setTokens(data.accessToken);
       return data.accessToken as string;
     })
     .catch(() => {

@@ -9,7 +9,6 @@ import {
   rawToken,
   setTokens,
   clearToken,
-  getRefreshToken,
   subscribeToken,
 } from "./token";
 import { resetContext } from "./context";
@@ -21,6 +20,7 @@ const SSO_BASE = process.env.NEXT_PUBLIC_SSO_BASE_URL ?? "http://localhost:8090"
 export async function login(email: string, password: string): Promise<void> {
   const res = await fetch(`${SSO_BASE}/auth/login`, {
     method: "POST",
+    credentials: "include", // 통합세션 리프레시 쿠키(.synub.io) 수신
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
@@ -29,7 +29,7 @@ export async function login(email: string, password: string): Promise<void> {
     throw new Error(b.message ?? "로그인에 실패했습니다.");
   }
   const data = await res.json();
-  setTokens(data.accessToken, data.refreshToken);
+  setTokens(data.accessToken); // 리프레시는 쿠키가 관리 — access만 저장
 }
 
 export async function register(
@@ -39,6 +39,7 @@ export async function register(
 ): Promise<void> {
   const res = await fetch(`${SSO_BASE}/auth/register`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, name }),
   });
@@ -50,16 +51,12 @@ export async function register(
 }
 
 export function logout() {
-  // 서버에서 리프레시 토큰 폐기(실패해도 로컬 정리는 진행)
-  const rt = getRefreshToken();
-  if (rt) {
-    fetch(`${SSO_BASE}/auth/logout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: rt }),
-      keepalive: true,
-    }).catch(() => {});
-  }
+  // 서버에서 리프레시 토큰(쿠키) 폐기 + 쿠키 삭제 → 전 서비스 통합세션 종료.
+  fetch(`${SSO_BASE}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    keepalive: true,
+  }).catch(() => {});
   resetContext(); // 로그아웃 시 개인 컨텍스트로 초기화
   clearToken();
 }

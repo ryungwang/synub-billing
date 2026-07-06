@@ -10,7 +10,6 @@ import { Maintenance } from "@/components/maintenance";
 import { useAuth } from "@/lib/auth";
 import {
   getToken,
-  getRefreshToken,
   refreshAccessToken,
   rawToken,
   subscribeToken,
@@ -48,9 +47,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // 액세스 토큰이 만료됐지만 리프레시가 있으면 조용히 갱신 후 진입(로그인 화면 깜빡임 방지)
+    // 액세스 토큰이 없으면 통합세션 쿠키(.synub.io)로 조용히 갱신 시도 후 진입.
+    // 다른 서비스(office 등)에서 로그인했으면 여기서 폼 없이 세션을 이어받는다(무폼 SSO).
     (async () => {
-      if (!getToken() && getRefreshToken()) {
+      if (!getToken()) {
         await refreshAccessToken();
       }
       setMounted(true);
@@ -66,7 +66,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!u) return;
     const ms = u.exp * 1000 - Date.now() - 60_000; // 만료 1분 전
     const timer = setTimeout(() => {
-      if (getRefreshToken()) refreshAccessToken().catch(() => {});
+      refreshAccessToken().catch(() => {});
     }, Math.max(1000, ms));
     return () => clearTimeout(timer);
   }, [rawTok]);
@@ -74,11 +74,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // 백그라운드 탭은 타이머가 지연될 수 있어, 탭이 다시 보일 때 만료됐으면 즉시 갱신.
   React.useEffect(() => {
     function onVisible() {
-      if (
-        document.visibilityState === "visible" &&
-        !getToken() &&
-        getRefreshToken()
-      ) {
+      if (document.visibilityState === "visible" && !getToken()) {
         refreshAccessToken().catch(() => {});
       }
     }
