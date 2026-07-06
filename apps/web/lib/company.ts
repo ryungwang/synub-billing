@@ -17,7 +17,8 @@ export const COMPANY = {
   address: "전북특별자치도 전주시 완산구 삼천천변2길 36-16, 4층 404호",
   /** 고객센터 전화 — 필요 시 070 대표번호로 교체 권장. */
   tel: "010-2105-7767",
-  email: "haru@synub.io",
+  /** 고객센터·문의 대표 이메일 (푸터·문의 페이지·문의 폼 mailto가 모두 이 값). */
+  email: "help@synub.io",
   /** 개인정보 보호책임자. */
   privacyOfficer: "김륜광",
   privacyEmail: "haru@synub.io",
