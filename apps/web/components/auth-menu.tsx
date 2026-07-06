@@ -23,6 +23,14 @@ export function AuthMenu() {
   const { user, logout } = useAuth();
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [loggingOut, setLoggingOut] = React.useState(false);
+
+  async function doLogout() {
+    setLoggingOut(true);
+    await logout(); // SSO 로그아웃(쿠키 삭제) 완료 대기 → 재로그인 레이스 방지
+    window.location.reload();
+  }
   const avatarUrl = React.useSyncExternalStore(
     subscribeAvatar,
     avatarSnapshot,
@@ -69,7 +77,7 @@ export function AuthMenu() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-52 overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-in fade-in-0 slide-in-from-top-1">
+          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-64 overflow-hidden rounded-2xl border border-border bg-card shadow-lg animate-in fade-in-0 slide-in-from-top-1">
             <div className="border-b border-border px-4 py-3">
               <div className="text-sm font-bold">{label}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
@@ -84,14 +92,8 @@ export function AuthMenu() {
             </Link>
             <button
               onClick={() => {
-                if (
-                  !window.confirm(
-                    "모든 Synub 서비스에서 함께 로그아웃됩니다.\n계속하시겠어요?"
-                  )
-                )
-                  return;
-                logout();
-                window.location.reload();
+                setMenuOpen(false);
+                setConfirmOpen(true);
               }}
               className="flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors hover:bg-destructive-subtle"
             >
@@ -106,6 +108,41 @@ export function AuthMenu() {
           </div>
         </>
       )}
+
+      {/* 로그아웃 확인 — 통합세션이라 전역 로그아웃임을 명확히 안내 */}
+      <Dialog open={confirmOpen} onOpenChange={(v) => !loggingOut && setConfirmOpen(v)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-destructive-subtle text-destructive">
+              <LogOut className="size-5" />
+            </div>
+            <DialogTitle>로그아웃할까요?</DialogTitle>
+            <DialogDescription>
+              <strong className="font-semibold text-foreground">
+                모든 Synub 서비스
+              </strong>
+              (billing·office 등)에서 함께 로그아웃됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={loggingOut}
+            >
+              취소
+            </Button>
+            <Button variant="destructive" onClick={doLogout} disabled={loggingOut}>
+              {loggingOut ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogOut className="size-4" />
+              )}
+              로그아웃
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

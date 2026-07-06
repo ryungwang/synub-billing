@@ -50,13 +50,17 @@ export async function register(
   await login(email, password); // 가입 직후 자동 로그인
 }
 
-export function logout() {
+export async function logout() {
   // 서버에서 리프레시 토큰(쿠키) 폐기 + 쿠키 삭제 → 전 서비스 통합세션 종료.
-  fetch(`${SSO_BASE}/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-    keepalive: true,
-  }).catch(() => {});
+  // await: 쿠키 삭제 완료를 기다린 뒤 호출부가 새로고침해야, 재접속 시 쿠키로 재로그인되는 레이스를 막는다.
+  try {
+    await fetch(`${SSO_BASE}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    /* noop — 실패해도 로컬은 정리 */
+  }
   resetContext(); // 로그아웃 시 개인 컨텍스트로 초기화
   clearToken();
 }
