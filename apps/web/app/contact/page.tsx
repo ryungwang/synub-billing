@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, MessageSquare, Clock, MapPin } from "lucide-react";
 import { COMPANY } from "@/lib/company";
-import { ContactForm } from "./contact-form";
+import { ContactForm, type CatalogItem } from "./contact-form";
+
+// 카탈로그를 서버에서 렌더(공개·CORS 무관)해 폼 제품 선택지를 항상 채운다.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "문의하기 — Synub Billing",
@@ -10,7 +13,30 @@ export const metadata: Metadata = {
     "Synub Billing 결제·구독 문의. 이메일 또는 온라인 문의 폼으로 접수하거나 자주 묻는 질문에서 빠르게 확인하세요.",
 };
 
-export default function ContactPage() {
+async function getCatalog(): Promise<CatalogItem[]> {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+  try {
+    const res = await fetch(`${base}/products`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const list = (await res.json()) as Array<{
+      serviceCode: string;
+      name: string;
+      status: string;
+      plans: Array<{ code: string; name: string }>;
+    }>;
+    return list.map((p) => ({
+      serviceCode: p.serviceCode,
+      name: p.name,
+      status: p.status,
+      plans: p.plans.map((pl) => ({ code: pl.code, name: pl.name })),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function ContactPage() {
+  const catalog = await getCatalog();
   return (
     <div className="mx-auto max-w-3xl">
       <header>
@@ -84,7 +110,7 @@ export default function ContactPage() {
 
       {/* 온라인 문의 폼 */}
       <div id="inquiry" className="mt-8 scroll-mt-6">
-        <ContactForm />
+        <ContactForm catalog={catalog} />
       </div>
     </div>
   );
