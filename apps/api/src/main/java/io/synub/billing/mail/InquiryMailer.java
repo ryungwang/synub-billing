@@ -69,8 +69,8 @@ public class InquiryMailer {
         return """
             <div style="margin:0;padding:0;background:#F1F3F5;">
               <div style="max-width:560px;margin:0 auto;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Segoe UI',Roboto,sans-serif;">
-                <div style="text-align:center;padding:6px 0 26px;">
-                  <img src="%s" alt="Synub" width="128" style="width:128px;height:auto;display:inline-block;border:0;" />
+                <div style="text-align:left;padding:6px 0 24px 4px;">
+                  <img src="%s" alt="Synub" width="168" style="width:168px;height:auto;display:inline-block;border:0;" />
                 </div>
                 <div style="background:#ffffff;border:1px solid #E8EBED;border-radius:22px;overflow:hidden;box-shadow:0 8px 28px rgba(17,24,39,0.06);">
                   <div style="height:5px;background:#3182F6;"></div>
