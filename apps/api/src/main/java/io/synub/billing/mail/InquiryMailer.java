@@ -36,8 +36,8 @@ public class InquiryMailer {
             return;
         }
         try {
-            String subject = "[Synub 문의:" + inq.getType() + "] "
-                    + (inq.getName() == null || inq.getName().isBlank() ? inq.getEmail() : inq.getName());
+            String subject = headerSafe("[Synub 문의:" + inq.getType() + "] "
+                    + (inq.getName() == null || inq.getName().isBlank() ? inq.getEmail() : inq.getName()));
             mail.send(to, subject, html(inq));
             log.info("문의 접수 알림 발송 id={} to={}", inq.getId(), to);
         } catch (Exception e) {
@@ -112,7 +112,7 @@ public class InquiryMailer {
             </div>
             """.formatted(logo, esc(inq.getType()), stamp, product, person,
                 esc(inq.getEmail()), esc(inq.getEmail()), attachRow, esc(inq.getMessage()),
-                replyUrl, appUrl);
+                esc(replyUrl), appUrl);
     }
 
     /** 이메일 내 링크·로고 기준 URL. 뒤 슬래시 제거. */
@@ -133,9 +133,18 @@ public class InquiryMailer {
         return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
-    /** HTML 인젝션 방지 — 사용자 입력을 본문에 넣기 전 최소 이스케이프. */
+    /**
+     * HTML 인젝션 방지 — 사용자 입력을 본문에 넣기 전 이스케이프.
+     * 텍스트뿐 아니라 속성값(href 등) 컨텍스트도 안전하도록 따옴표까지 처리(속성 탈출 차단).
+     */
     private static String esc(String s) {
         if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    /** 메일 헤더(제목) 안전화 — CR/LF·제어문자 제거로 헤더 인젝션 차단. */
+    private static String headerSafe(String s) {
+        return s == null ? "" : s.replaceAll("[\\r\\n\\x00-\\x1f]", " ").trim();
     }
 }
