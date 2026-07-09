@@ -67,6 +67,16 @@ public class SubscriptionService {
         if (plan.getProduct().isOrgOnly() && !owner.isOrganization()) {
             throw new BadRequestException("이 제품은 회사(조직) 계정만 구독할 수 있습니다. 회사로 전환한 뒤 구독하세요.");
         }
+        // 같은 제품 중복 활성 구독 차단 — 이미 이용 중이면 새로 만들지 않는다(이중 청구·상태 오염 방지).
+        // 해지·중지된 구독은 재구독 허용(status가 active/past_due 인 것만 in-force로 간주).
+        boolean alreadySubscribed = subscriptions
+                .findByOwnerTypeAndOwnerIdOrderByCreatedAtAsc(owner.type(), owner.id()).stream()
+                .filter(s -> "active".equals(s.getStatus()) || "past_due".equals(s.getStatus()))
+                .anyMatch(s -> s.getPlan().getProduct().getId().equals(plan.getProduct().getId()));
+        if (alreadySubscribed) {
+            throw new BadRequestException("이미 이 제품을 구독 중입니다. 플랜 변경으로 조정하세요.");
+        }
+
         // 카드는 같은 소유 스코프의 것이어야 한다(개인 카드로 회사 구독 불가, 그 반대도).
         BillingKey key = keys.findByIdAndOwnerTypeAndOwnerId(req.billingKeyId(), owner.type(), owner.id())
                 .orElseThrow(() -> new NotFoundException("결제수단을 찾을 수 없습니다."));
@@ -149,18 +159,86 @@ public class SubscriptionService {
         return mapper.toSubscription(sub);
     }
 
-    /** 플랜 변경 — MVP는 다음 주기부터 적용(레코드만 갱신). (PRD §3.5) */
+    /**
+     * 플랜 변경 (PRD §3.5) — 같은 제품 안에서만 허용. 업/다운 비대칭 처리:
+     * <ul>
+     *   <li><b>업그레이드</b>(같은 주기·상위금액): 즉시 전환 + 남은 기간 차액 즉시 청구.
+     *       (즉시 전환만 하고 청구를 미루면 상위 기능을 무상 이용하는 창이 생기므로 반드시 차액을 받는다.)</li>
+     *   <li><b>다운그레이드/결제주기 변경</b>: 다음 결제일에 반영(예약). 지금은 청구·환불·권한변경 없이
+     *       현재 플랜을 그대로 이용한다. 반영은 {@link BillingEngine}가 갱신 성공 시 수행한다.</li>
+     * </ul>
+     * 다른 제품·비활성 제품으로의 변경은 차단(무단 권한 획득 방지).
+     */
     @Transactional
     public SubscriptionDto changePlan(Long id, ChangePlanRequest req) {
         Subscription sub = findOwned(id);
         if (sub.isComplimentary()) {
             throw new BadRequestException("개발사 무상 구독은 변경할 수 없습니다.");
         }
+        Plan current = sub.getPlan();
         Plan newPlan = plans.findById(req.planId())
                 .orElseThrow(() -> new NotFoundException("요금제를 찾을 수 없습니다."));
-        sub.setPlan(newPlan);
-        webhooks.fire(sub, SubscriptionWebhooks.PLAN_CHANGED);
+
+        // 같은 제품 안에서만 변경 — 다른 제품 플랜으로 갈아타 해당 제품 권한을 무단 획득하는 것 차단.
+        if (!newPlan.getProduct().getId().equals(current.getProduct().getId())) {
+            throw new BadRequestException("같은 제품의 다른 플랜으로만 변경할 수 있습니다.");
+        }
+        // 준비중·숨김 제품(플랜)으로는 변경 불가.
+        if (!"active".equalsIgnoreCase(newPlan.getProduct().getStatus())) {
+            throw new BadRequestException("아직 선택할 수 없는 플랜입니다.");
+        }
+        if (newPlan.getId().equals(current.getId())) {
+            // 현재 플랜과 동일 — 예약된 변경이 있으면 취소하고 현재 상태 반환.
+            sub.setPendingPlan(null);
+            return mapper.toSubscription(sub);
+        }
+
+        int seats = sub.getSeats();
+        boolean sameCycle = current.getBillingCycle().equals(newPlan.getBillingCycle());
+        int currentAmount = current.amountForSeats(seats);
+        int newAmount = newPlan.amountForSeats(seats);
+
+        if (sameCycle && newAmount > currentAmount) {
+            // 업그레이드 — 즉시 전환 + 잔여기간 차액 즉시 청구.
+            LocalDate today = LocalDate.now(DtoMapper.KST);
+            long diff = Math.round((long) (newAmount - currentAmount) * remainingFraction(sub, current));
+            if (diff > 0) {
+                Customer me = currentUser.resolve();
+                String paymentId = "synub-plan" + sub.getId() + "-" + today
+                        + "-" + UUID.randomUUID().toString().substring(0, 8);
+                String orderName = newPlan.getProduct().getName() + " " + newPlan.getName()
+                        + " 업그레이드(잔여기간 차액)";
+                PaymentGateway.ChargeResult charge = gateway.charge(new PaymentGateway.ChargeRequest(
+                        sub.getBillingKey().getPgBillingKey(), (int) diff, orderName, paymentId,
+                        me.getExternalId(), me.getEmail(), me.phoneForBilling()));
+                if (!charge.success()) {
+                    throw new BadRequestException("업그레이드 결제에 실패했습니다: " + charge.failureReason());
+                }
+                String receiptNo = today.format(DateTimeFormatter.BASIC_ISO_DATE)
+                        + "-U" + String.format("%04d", sub.getId());
+                payments.save(new Payment(sub, charge.pgPaymentId(), (int) diff,
+                        "paid", null, receiptNo, Instant.now()));
+            }
+            sub.setPlan(newPlan);
+            sub.setPendingPlan(null);   // 이전에 예약된 다운그레이드가 있으면 업그레이드가 덮어쓴다.
+            webhooks.fire(sub, SubscriptionWebhooks.PLAN_CHANGED);
+        } else {
+            // 다운그레이드 또는 결제주기 변경 — 다음 결제일에 반영(예약). 지금은 현재 플랜 유지.
+            // 웹훅은 실제 반영(갱신) 시점에 발화한다(아직 상위/현재 플랜 이용 중이므로).
+            sub.setPendingPlan(newPlan);
+        }
         return mapper.toSubscription(sub);
+    }
+
+    /** 현재 청구주기에서 오늘 이후 남은 기간의 비율(0~1). 비례정산 공통 계산. */
+    private double remainingFraction(Subscription sub, Plan plan) {
+        LocalDate today = LocalDate.now(DtoMapper.KST);
+        LocalDate next = sub.getNextBillingDate();
+        LocalDate cycleStart = "yearly".equals(plan.getBillingCycle())
+                ? next.minusYears(1) : next.minusMonths(1);
+        long cycleDays = Math.max(1, ChronoUnit.DAYS.between(cycleStart, next));
+        long remainingDays = Math.max(0, ChronoUnit.DAYS.between(today, next));
+        return Math.min(1.0, (double) remainingDays / cycleDays);
     }
 
     /**
@@ -185,12 +263,7 @@ public class SubscriptionService {
 
         // 남은 기간 비율(오늘~다음청구일 / 현재 청구주기 길이)
         LocalDate today = LocalDate.now(DtoMapper.KST);
-        LocalDate next = sub.getNextBillingDate();
-        LocalDate cycleStart = "yearly".equals(plan.getBillingCycle())
-                ? next.minusYears(1) : next.minusMonths(1);
-        long cycleDays = Math.max(1, ChronoUnit.DAYS.between(cycleStart, next));
-        long remainingDays = Math.max(0, ChronoUnit.DAYS.between(today, next));
-        double fraction = Math.min(1.0, (double) remainingDays / cycleDays);
+        double fraction = remainingFraction(sub, plan);
 
         int seatDelta = newSeats - oldSeats;
         long prorated = Math.round((long) plan.getAmount() * Math.abs(seatDelta) * fraction);

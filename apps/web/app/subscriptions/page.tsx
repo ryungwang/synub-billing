@@ -256,6 +256,15 @@ export default function SubscriptionsPage() {
                             <span className="font-semibold text-foreground tnum">
                               {formatKRW(s.amount)}
                             </span>
+                            {s.pendingPlan && (
+                              <span className="mt-0.5 block text-[12px] text-muted-foreground">
+                                다음 결제일에{" "}
+                                <span className="font-semibold text-foreground">
+                                  {s.pendingPlan}
+                                </span>{" "}
+                                플랜으로 변경 예정
+                              </span>
+                            )}
                           </div>
                         )}
                         <ChangePlanDialog
@@ -430,14 +439,19 @@ function ChangePlanDialog({
             {sub.product}의 다른 플랜으로 변경합니다.
           </DialogDescription>
         </DialogHeader>
-        {/* 반영 시점 안내 — 즉시 정산 없이 다음 결제일부터 새 플랜 적용(업/다운 공통). */}
+        {/* 반영 시점 안내 — 업그레이드는 즉시(차액 청구), 다운그레이드·주기변경은 다음 결제일 반영. */}
         <div className="flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0 text-foreground/70" />
           <div>
-            변경은 <span className="font-semibold text-foreground">다음 결제일
-            {sub.nextBillingDate ? ` (${formatDate(sub.nextBillingDate)})` : ""}
-            부터</span> 적용됩니다. 그때까지는 현재 플랜을 그대로 이용하고,
-            지금 추가 청구나 환불은 없어요.
+            <span className="font-semibold text-foreground">업그레이드</span>는 즉시
+            전환되고 잔여기간 차액이 지금 결제됩니다.{" "}
+            <span className="font-semibold text-foreground">다운그레이드</span>는{" "}
+            <span className="font-semibold text-foreground">
+              다음 결제일
+              {sub.nextBillingDate ? ` (${formatDate(sub.nextBillingDate)})` : ""}
+              부터
+            </span>{" "}
+            적용되며, 그때까지 현재 플랜을 이용하고 지금 청구·환불은 없어요.
           </div>
         </div>
         <div className="space-y-2">
@@ -445,7 +459,9 @@ function ChangePlanDialog({
             const current = p.name === sub.plan;
             const currentAmount =
               plans.find((x) => x.name === sub.plan)?.amount ?? sub.amount;
-            const isUpgrade = !current && p.amount > currentAmount;
+            const sameCycle = p.cycle === sub.cycle;
+            // 업그레이드(같은 주기·상위금액)만 즉시 반영, 그 외(다운그레이드·주기변경)는 예약. 서버 로직과 동일.
+            const immediate = !current && sameCycle && p.amount > currentAmount;
             const isDowngrade = !current && p.amount < currentAmount;
             return (
               <div
@@ -465,7 +481,7 @@ function ChangePlanDialog({
                         현재
                       </span>
                     )}
-                    {isUpgrade && (
+                    {immediate && (
                       <span className="inline-flex items-center gap-0.5 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-bold text-success-foreground">
                         <ArrowUpRight className="size-3" />
                         업그레이드
@@ -479,7 +495,11 @@ function ChangePlanDialog({
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {p.tagline}
+                    {current
+                      ? p.tagline
+                      : immediate
+                        ? "지금 잔여기간 차액 결제 후 즉시 전환"
+                        : "다음 결제일부터 적용"}
                   </div>
                 </div>
                 <div className="text-right text-sm font-bold tnum">
@@ -494,7 +514,7 @@ function ChangePlanDialog({
                   disabled={current || busy}
                   onClick={() => change(p.id)}
                 >
-                  {current ? "이용 중" : "변경"}
+                  {current ? "이용 중" : immediate ? "즉시 업그레이드" : "예약 변경"}
                 </Button>
               </div>
             );

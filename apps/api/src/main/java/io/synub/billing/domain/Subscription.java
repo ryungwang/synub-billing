@@ -20,6 +20,15 @@ public class Subscription {
     @JoinColumn(name = "plan_id", nullable = false)
     private Plan plan;
 
+    /**
+     * 예약된 플랜 변경(다운그레이드·결제주기 변경). 다음 갱신 결제 성공 시 plan으로 스왑되고 비워진다.
+     * entitlement는 이 값을 무시하고 현재 plan을 읽는다 — 이용 중 기간엔 결제한 플랜을 그대로 보장.
+     * 업그레이드는 즉시 전환(차액 즉시청구)이라 이 값을 쓰지 않는다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pending_plan_id")
+    private Plan pendingPlan;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "billing_key_id")   // 무상(complimentary) 구독은 결제수단 없음(null)
     private BillingKey billingKey;
@@ -107,6 +116,8 @@ public class Subscription {
     public Customer getCustomer() { return customer; }
     public Plan getPlan() { return plan; }
     public void setPlan(Plan plan) { this.plan = plan; }
+    public Plan getPendingPlan() { return pendingPlan; }
+    public void setPendingPlan(Plan pendingPlan) { this.pendingPlan = pendingPlan; }
     public BillingKey getBillingKey() { return billingKey; }
     public void setBillingKey(BillingKey billingKey) { this.billingKey = billingKey; }
     public String getStatus() { return status; }

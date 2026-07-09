@@ -72,6 +72,8 @@ export interface ApiSubscription {
   seats: number;
   creditBalance: number;
   complimentary: boolean;
+  /** 다음 결제일에 반영될 예약된 플랜(다운그레이드·주기변경). 없으면 null. */
+  pendingPlan: string | null;
 }
 
 /** 전 스코프(개인+소속 조직) 이용 중 구독 — 제품 둘러보기 배지용. */

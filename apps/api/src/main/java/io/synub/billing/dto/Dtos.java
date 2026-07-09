@@ -1,6 +1,8 @@
 package io.synub.billing.dto;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -35,7 +37,7 @@ public final class Dtos {
             String card, boolean cancelAtPeriodEnd,
             int monthsActive, UsageDto usage,
             String pricingType, int unitAmount, int seats, int creditBalance,
-            boolean complimentary) {}
+            boolean complimentary, String pendingPlan) {}
 
     // ---- 결제 내역 ----
     public record PaymentDto(
@@ -83,7 +85,8 @@ public final class Dtos {
             String cardLast4, String cardType, Boolean primary, String phone) {}
 
     public record CreateSubscriptionRequest(
-            @NotNull Long planId, @NotNull Long billingKeyId, Integer seats) {}
+            @NotNull Long planId, @NotNull Long billingKeyId,
+            @Min(1) @Max(999) Integer seats) {}
 
     public record ChangePlanRequest(@NotNull Long planId) {}
 
@@ -92,7 +95,7 @@ public final class Dtos {
             @NotNull String customer, @NotNull String service,
             String label, String unit, int used, Integer limit) {}
 
-    public record ChangeSeatsRequest(@NotNull Integer seats) {}
+    public record ChangeSeatsRequest(@NotNull @Min(1) @Max(999) Integer seats) {}
 
     // ---- 조직/역할 ----
     /** 내가 속한 조직 + 내 역할 + 인증상태(pending|verified|rejected) + 조직코드. */

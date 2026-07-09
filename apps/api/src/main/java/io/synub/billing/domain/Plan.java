@@ -64,9 +64,14 @@ public class Plan {
 
     public boolean isPerSeat() { return "per_seat".equals(pricingType); }
 
-    /** 좌석 수를 반영한 실제 청구액. 정액이면 seats 무시. */
+    /** 좌석 수를 반영한 실제 청구액. 정액이면 seats 무시. long 연산으로 정수 오버플로 차단. */
     public int amountForSeats(int seats) {
-        return isPerSeat() ? amount * Math.max(1, seats) : amount;
+        if (!isPerSeat()) return amount;
+        long total = (long) amount * Math.max(1, seats);
+        if (total > Integer.MAX_VALUE) {
+            throw new IllegalStateException("청구 금액이 허용 범위를 초과했습니다.");
+        }
+        return (int) total;
     }
     public List<String> getFeatures() { return features; }
     public boolean isHighlight() { return highlight; }

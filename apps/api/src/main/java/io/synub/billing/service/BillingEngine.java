@@ -72,11 +72,13 @@ public class BillingEngine {
 
     private Outcome chargeOne(Subscription sub, LocalDate today) {
         boolean wasPastDue = "past_due".equals(sub.getStatus());
-        Plan plan = sub.getPlan();
+        // 예약된 플랜 변경(다운그레이드·주기변경)이 있으면 이번 갱신부터 새 플랜으로 청구한다.
+        // 스왑은 결제 성공 후에만 반영(실패 시 현재 플랜 유지, 다음 재시도에 다시 적용).
+        Plan plan = sub.getPendingPlan() != null ? sub.getPendingPlan() : sub.getPlan();
         String paymentId = "synub-sub" + sub.getId() + "-" + today
                 + "-r" + sub.getRetryCount() + "-" + UUID.randomUUID().toString().substring(0, 8);
         String orderName = plan.getProduct().getName() + " " + plan.getName() + " 정기결제";
-        int gross = sub.chargeAmount();                     // 좌석 수 반영 총액
+        int gross = plan.amountForSeats(sub.getSeats());    // 좌석 수 반영 총액(예약 플랜 우선)
         int credit = sub.getCreditBalance();
         int amount = Math.max(0, gross - credit);           // 크레딧 차감 후 실제 청구액
         int leftoverCredit = Math.max(0, credit - gross);   // 사용 후 남는 크레딧
@@ -108,6 +110,13 @@ public class BillingEngine {
                     ? base.plusYears(1) : base.plusMonths(1));
             sub.setStatus("active");
             sub.setRetryCount(0);
+
+            // 예약된 플랜 변경을 이번 갱신 결제 성공으로 확정 반영.
+            if (sub.getPendingPlan() != null) {
+                sub.setPlan(sub.getPendingPlan());
+                sub.setPendingPlan(null);
+                webhooks.fire(sub, SubscriptionWebhooks.PLAN_CHANGED);
+            }
 
             if (wasPastDue) {
                 webhooks.fire(sub, SubscriptionWebhooks.ACTIVATED);
