@@ -27,6 +27,7 @@ public class AvatarController {
         ProfileService.Avatar a = profiles.loadAvatar(key);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(a.contentType()))
+                .header("X-Content-Type-Options", "nosniff")
                 .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
                 .body(a.content());
     }

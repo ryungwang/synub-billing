@@ -102,6 +102,8 @@ public class AdminController {
         AdminService.DocumentContent doc = admin.organizationDocument(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(doc.contentType()))
+                // 폴리글롯 업로드가 선언 타입과 다르게 스니핑돼 실행되는 것 차단(특히 inline 렌더).
+                .header("X-Content-Type-Options", "nosniff")
                 .header("Content-Disposition", "inline; filename=\"business-doc\"")
                 .body(doc.content());
     }
@@ -124,6 +126,7 @@ public class AdminController {
         InquiryService.Attachment a = inquiries.attachment(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(a.contentType()))
+                .header("X-Content-Type-Options", "nosniff")
                 .header("Content-Disposition", "attachment; filename=\"" + a.filename().replace("\"", "") + "\"")
                 .body(a.content());
     }
