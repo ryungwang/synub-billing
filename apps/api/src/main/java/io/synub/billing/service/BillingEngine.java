@@ -46,7 +46,7 @@ public class BillingEngine {
     }
 
     public record RunResult(int processed, int charged, int recovered,
-                            int failed, int suspended) {}
+                            int failed, int suspended, int terminated) {}
 
     /** 오늘 청구 대상(active/past_due 중 next_billing_date 도래) 일괄 처리. */
     @Transactional
@@ -54,23 +54,32 @@ public class BillingEngine {
         LocalDate today = LocalDate.now(DtoMapper.KST);
         List<Subscription> due = subscriptions.findDue(List.of("active", "past_due"), today);
 
-        int charged = 0, recovered = 0, failed = 0, suspended = 0;
+        int charged = 0, recovered = 0, failed = 0, suspended = 0, terminated = 0;
         for (Subscription sub : due) {
             switch (chargeOne(sub, today)) {
                 case CHARGED -> charged++;
                 case RECOVERED -> { charged++; recovered++; }
                 case FAILED -> failed++;
                 case SUSPENDED -> suspended++;
+                case TERMINATED -> terminated++;
             }
         }
-        log.info("자동청구 완료: 대상 {} / 성공 {}(복구 {}) / 실패 {} / 중지 {}",
-                due.size(), charged, recovered, failed, suspended);
-        return new RunResult(due.size(), charged, recovered, failed, suspended);
+        log.info("자동청구 완료: 대상 {} / 성공 {}(복구 {}) / 실패 {} / 중지 {} / 종료 {}",
+                due.size(), charged, recovered, failed, suspended, terminated);
+        return new RunResult(due.size(), charged, recovered, failed, suspended, terminated);
     }
 
-    private enum Outcome { CHARGED, RECOVERED, FAILED, SUSPENDED }
+    private enum Outcome { CHARGED, RECOVERED, FAILED, SUSPENDED, TERMINATED }
 
     private Outcome chargeOne(Subscription sub, LocalDate today) {
+        // 해지 예약된 구독은 결제일 도래 시 재청구하지 않고 종료(예약 해지 확정).
+        // status가 active라 findDue에 잡히므로 여기서 걸러야 '해지했는데 카드 재청구·구독 부활'을 막는다.
+        if (sub.isCancelAtPeriodEnd()) {
+            sub.setStatus("canceled");
+            sub.setPendingPlan(null); // 예약된 플랜 변경도 함께 정리
+            webhooks.fire(sub, SubscriptionWebhooks.CANCELED);
+            return Outcome.TERMINATED;
+        }
         boolean wasPastDue = "past_due".equals(sub.getStatus());
         // 예약된 플랜 변경(다운그레이드·주기변경)이 있으면 이번 갱신부터 새 플랜으로 청구한다.
         // 스왑은 결제 성공 후에만 반영(실패 시 현재 플랜 유지, 다음 재시도에 다시 적용).

@@ -95,4 +95,16 @@ class BillingEngineTest {
         verify(sub, never()).setPlan(any());          // 스왑 안 됨(현재 플랜 유지)
         verify(sub, never()).setPendingPlan(eq(null)); // 예약 유지 → 다음 재시도에 다시 적용
     }
+
+    @Test
+    void 해지예약_구독은_결제일에_재청구하지_않고_종료한다() {
+        wireDueSubscription();
+        when(sub.isCancelAtPeriodEnd()).thenReturn(true); // 해지 예약 상태로 결제일 도래
+
+        engine().runDueBilling();
+
+        verify(gateway, never()).charge(any());                       // 카드 재청구 없음
+        verify(sub).setStatus("canceled");                            // 예약 해지 확정(종료)
+        verify(webhooks).fire(sub, SubscriptionWebhooks.CANCELED);
+    }
 }
