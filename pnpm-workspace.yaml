@@ -5,3 +5,7 @@ allowBuilds:
   sharp: set this to true or false
 onlyBuiltDependencies:
   - sharp
+
+# postcss 8.4.31(next 가 고정) 은 GHSA-qx2v-qp2m-jg93 취약 — 패치 버전으로 통일.
+overrides:
+  postcss: ^8.5.15
